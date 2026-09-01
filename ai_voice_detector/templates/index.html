@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Voice Detector</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="page">
+    <header>
+      <h1>AI Voice Detector</h1>
+      <p class="subtitle">Real-time detection of voice cloning &amp; impersonation attacks &mdash; SIH26104</p>
+    </header>
+
+    <section class="card">
+      <h2>Upload audio</h2>
+      <input type="file" id="audioFile" accept=".wav,.flac,.mp3,.ogg">
+      <div class="button-row">
+        <button id="analyzeBtn" class="btn btn-primary">Analyze</button>
+        <button id="streamBtn" class="btn btn-secondary">Simulate Live Stream</button>
+      </div>
+    </section>
+
+    <section id="singleResult" class="card result-card hidden">
+      <h2>Analysis Result</h2>
+      <div class="score-row">
+        <div class="score-number" id="singleScore">--</div>
+        <div class="score-meta">
+          <span id="singleLevel" class="badge">--</span>
+          <p id="singleAction" class="action-text"></p>
+        </div>
+      </div>
+    </section>
+
+    <section id="streamResult" class="card result-card hidden">
+      <h2>Live Stream Simulation</h2>
+      <div id="streamBanner" class="banner">Waiting for stream&hellip;</div>
+
+      <div class="score-row">
+        <div class="score-number" id="rollingScore">--</div>
+        <div class="score-meta">
+          <span id="streamLevel" class="badge">--</span>
+          <p class="action-text">Rolling risk score (exponentially smoothed)</p>
+        </div>
+      </div>
+
+      <div class="gauge-track">
+        <div id="gaugeFill" class="gauge-fill"></div>
+      </div>
+
+      <h3>Chunk log</h3>
+      <div id="chunkLog" class="chunk-log"></div>
+    </section>
+  </div>
+
+  <script>
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const streamBtn = document.getElementById('streamBtn');
+    const audioFile = document.getElementById('audioFile');
+
+    const singleResult = document.getElementById('singleResult');
+    const singleScore = document.getElementById('singleScore');
+    const singleLevel = document.getElementById('singleLevel');
+    const singleAction = document.getElementById('singleAction');
+
+    const streamResult = document.getElementById('streamResult');
+    const streamBanner = document.getElementById('streamBanner');
+    const rollingScore = document.getElementById('rollingScore');
+    const streamLevel = document.getElementById('streamLevel');
+    const gaugeFill = document.getElementById('gaugeFill');
+    const chunkLog = document.getElementById('chunkLog');
+
+    function riskClass(level) {
+      if (level === 'LOW') return 'risk-low';
+      if (level === 'MEDIUM') return 'risk-medium';
+      return 'risk-high';
+    }
+
+    function requireFile() {
+      if (!audioFile.files.length) {
+        alert('Choose an audio file first.');
+        return null;
+      }
+      return audioFile.files[0];
+    }
+
+    analyzeBtn.addEventListener('click', async () => {
+      const file = requireFile();
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append('audio', file);
+
+      analyzeBtn.disabled = true;
+      analyzeBtn.textContent = 'Analyzing...';
+
+      try {
+        const res = await fetch('/analyze', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.error) { alert('Error: ' + data.error); return; }
+
+        singleResult.classList.remove('hidden');
+        singleResult.className = 'card result-card ' + riskClass(data.risk_level);
+        singleScore.textContent = data.risk_score.toFixed(2);
+        singleLevel.textContent = data.risk_level;
+        singleAction.textContent = data.recommended_action;
+      } catch (e) {
+        alert('Request failed: ' + e.message);
+      } finally {
+        analyzeBtn.disabled = false;
+        analyzeBtn.textContent = 'Analyze';
+      }
+    });
+
+    streamBtn.addEventListener('click', async () => {
+      const file = requireFile();
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append('audio', file);
+
+      streamResult.classList.remove('hidden');
+      streamResult.className = 'card result-card';
+      streamBanner.textContent = 'Streaming...';
+      streamBanner.className = 'banner';
+      rollingScore.textContent = '--';
+      streamLevel.textContent = '--';
+      gaugeFill.style.width = '0%';
+      gaugeFill.className = 'gauge-fill';
+      chunkLog.innerHTML = '';
+
+      streamBtn.disabled = true;
+      streamBtn.textContent = 'Streaming...';
+
+      try {
+        const res = await fetch('/analyze_stream', { method: 'POST', body: formData });
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+
+          const parts = buffer.split('\n\n');
+          buffer = parts.pop();
+
+          for (const part of parts) {
+            if (!part.trim()) continue;
+            let eventType = 'message';
+            let dataLine = '';
+            for (const line of part.split('\n')) {
+              if (line.startsWith('event:')) eventType = line.slice(6).trim();
+              if (line.startsWith('data:')) dataLine = line.slice(5).trim();
+            }
+
+            if (eventType === 'done') {
+              streamBanner.textContent = 'Stream complete';
+              continue;
+            }
+            if (eventType === 'error') {
+              const err = JSON.parse(dataLine);
+              streamBanner.textContent = 'Error: ' + err.error;
+              streamBanner.className = 'banner risk-high';
+              continue;
+            }
+
+            const payload = JSON.parse(dataLine);
+            const cls = riskClass(payload.risk_level);
+
+            rollingScore.textContent = payload.rolling_score.toFixed(2);
+            streamLevel.textContent = payload.risk_level;
+            gaugeFill.style.width = Math.min(payload.rolling_score, 100) + '%';
+            gaugeFill.className = 'gauge-fill ' + cls;
+
+            streamBanner.textContent =
+              `Chunk ${payload.chunk_index + 1}/${payload.total_chunks} -- ${payload.risk_level} risk -- ${payload.recommended_action}`;
+            streamBanner.className = 'banner ' + cls;
+
+            const row = document.createElement('div');
+            row.className = 'chunk-row ' + cls;
+            row.textContent =
+              `chunk ${payload.chunk_index + 1}: instant=${payload.instant_score.toFixed(2)}  rolling=${payload.rolling_score.toFixed(2)}  risk=${payload.risk_level}`;
+            chunkLog.appendChild(row);
+            chunkLog.scrollTop = chunkLog.scrollHeight;
+          }
+        }
+      } catch (e) {
+        streamBanner.textContent = 'Request failed: ' + e.message;
+        streamBanner.className = 'banner risk-high';
+      } finally {
+        streamBtn.disabled = false;
+        streamBtn.textContent = 'Simulate Live Stream';
+      }
+    });
+  </script>
+</body>
+</html>
