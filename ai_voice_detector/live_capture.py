@@ -9,6 +9,7 @@ import argparse
 import queue
 import time
 
+import librosa
 import numpy as np
 import sounddevice as sd
 
@@ -26,18 +27,32 @@ def list_audio_devices():
     return devices
 
 
-def _open_input_stream(device_index, sr, chunk_samples, callback):
-    try:
-        return sd.InputStream(
-            device=device_index, channels=1, samplerate=sr,
-            blocksize=chunk_samples, dtype="float32", callback=callback,
-        )
-    except sd.PortAudioError:
-        # some devices (e.g. VB-Cable) only expose a stereo input
-        return sd.InputStream(
-            device=device_index, channels=2, samplerate=sr,
-            blocksize=chunk_samples, dtype="float32", callback=callback,
-        )
+def _resolve_stream_params(device_index, target_sr):
+    """Find a (channels, samplerate) combo the device/driver actually
+    accepts. Many WDM/WASAPI-exclusive devices reject an arbitrary
+    samplerate (like our model's 16kHz) and only work at their native
+    rate, so we probe and fall back to that, resampling in software."""
+    info = sd.query_devices(device_index)
+    max_ch = info["max_input_channels"]
+    if max_ch <= 0:
+        raise ValueError(f"device {device_index} has no input channels")
+
+    channel_options = list(dict.fromkeys([1, max_ch]))
+    sr_options = list(dict.fromkeys([target_sr, int(round(info["default_samplerate"]))]))
+
+    for channels in channel_options:
+        for sr in sr_options:
+            try:
+                sd.check_input_settings(device=device_index, channels=channels, samplerate=sr)
+                return channels, sr
+            except Exception:
+                continue
+
+    raise RuntimeError(
+        f"device {device_index} ('{info['name']}') doesn't support any of the "
+        f"tried channel/samplerate combinations: channels={channel_options}, "
+        f"samplerates={sr_options}"
+    )
 
 
 def capture_and_analyze(device_index, chunk_seconds=2.0, sr=16000, max_duration=None,
@@ -48,7 +63,13 @@ def capture_and_analyze(device_index, chunk_seconds=2.0, sr=16000, max_duration=
     the input stream)."""
     clf, scaler = load_model()
 
-    chunk_samples = int(sr * chunk_seconds)
+    channels, capture_sr = _resolve_stream_params(device_index, sr)
+    if capture_sr != sr:
+        print(f"device {device_index} doesn't support {sr}Hz directly; "
+              f"capturing at its native {capture_sr}Hz (channels={channels}) "
+              f"and resampling to {sr}Hz per chunk.")
+
+    chunk_samples = int(capture_sr * chunk_seconds)
     audio_q = queue.Queue()
 
     def callback(indata, frames, time_info, status):
@@ -60,7 +81,8 @@ def capture_and_analyze(device_index, chunk_seconds=2.0, sr=16000, max_duration=
     rolling_score = None
     start_time = time.time()
 
-    with _open_input_stream(device_index, sr, chunk_samples, callback):
+    with sd.InputStream(device=device_index, channels=channels, samplerate=capture_sr,
+                         blocksize=chunk_samples, dtype="float32", callback=callback):
         while True:
             if max_duration is not None and (time.time() - start_time) >= max_duration:
                 break
@@ -70,6 +92,9 @@ def capture_and_analyze(device_index, chunk_seconds=2.0, sr=16000, max_duration=
                 audio = audio_q.get(timeout=1.0)
             except queue.Empty:
                 continue
+
+            if capture_sr != sr:
+                audio = librosa.resample(audio, orig_sr=capture_sr, target_sr=sr)
 
             peak = np.max(np.abs(audio))
             if peak > 0:
@@ -91,10 +116,31 @@ def capture_and_analyze(device_index, chunk_seconds=2.0, sr=16000, max_duration=
             }
 
 
+def _resolve_device_arg(device_arg):
+    """Windows/PortAudio device indices can shift between process launches
+    (e.g. a Bluetooth headset connecting/disconnecting), so also accept a
+    case-insensitive substring of the device name (e.g. 'CABLE')."""
+    try:
+        return int(device_arg)
+    except ValueError:
+        pass
+
+    devices = sd.query_devices()
+    matches = [i for i, d in enumerate(devices)
+               if d["max_input_channels"] > 0 and device_arg.lower() in d["name"].lower()]
+    if not matches:
+        raise ValueError(f"no input device name contains '{device_arg}'")
+    if len(matches) > 1:
+        names = ", ".join(f"{i}:{devices[i]['name']}" for i in matches)
+        raise ValueError(f"multiple devices match '{device_arg}': {names} -- use an exact index instead")
+    return matches[0]
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Live audio capture for the AI voice detector.")
-    parser.add_argument("--device", type=int, default=None,
-                         help="input device index; omit to just list devices")
+    parser.add_argument("--device", type=str, default=None,
+                         help="input device index, or a substring of its name (e.g. 'CABLE'); "
+                              "omit to just list devices")
     parser.add_argument("--chunk-seconds", type=float, default=2.0)
     parser.add_argument("--max-duration", type=float, default=None,
                          help="stop after N seconds (default: run until Ctrl+C)")
@@ -103,12 +149,13 @@ if __name__ == "__main__":
     if args.device is None:
         print("Available audio input devices:")
         list_audio_devices()
-        print("\nRun again with --device <idx> to start live capture.")
+        print("\nRun again with --device <idx or name substring> to start live capture.")
     else:
-        print(f"Listening on device {args.device} ... Ctrl+C to stop.")
+        device_index = _resolve_device_arg(args.device)
+        print(f"Listening on device {device_index} ... Ctrl+C to stop.")
         try:
             for result in capture_and_analyze(
-                args.device, chunk_seconds=args.chunk_seconds, max_duration=args.max_duration
+                device_index, chunk_seconds=args.chunk_seconds, max_duration=args.max_duration
             ):
                 print(f"[{result['timestamp']}] instant={result['instant_score']:6.2f}  "
                       f"rolling={result['rolling_score']:6.2f}  risk={result['risk_level']}")
