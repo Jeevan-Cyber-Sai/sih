@@ -70,13 +70,24 @@ def capture_and_analyze(device_index, chunk_seconds=2.0, sr=16000, max_duration=
               f"and resampling to {sr}Hz per chunk.")
 
     chunk_samples = int(capture_sr * chunk_seconds)
-    audio_q = queue.Queue()
+    # maxsize=1: backpressure. If a new chunk arrives while the consumer
+    # is still processing the previous one, DROP the new chunk instead of
+    # queueing it -- queueing lets the backlog (and lag) compound over
+    # the course of a live call, since the consumer never catches back up.
+    audio_q = queue.Queue(maxsize=1)
+    n_dropped = 0
 
     def callback(indata, frames, time_info, status):
+        nonlocal n_dropped
         if status:
             print(f"[stream status] {status}")
         mono = indata.mean(axis=1) if indata.ndim > 1 and indata.shape[1] > 1 else indata[:, 0]
-        audio_q.put(mono.copy())
+        try:
+            audio_q.put_nowait(mono.copy())
+        except queue.Full:
+            n_dropped += 1
+            print(f"[{time.strftime('%H:%M:%S')}] chunk dropped (consumer still processing "
+                  f"previous chunk) -- {n_dropped} dropped so far")
 
     rolling_score = None
     start_time = time.time()
@@ -113,6 +124,7 @@ def capture_and_analyze(device_index, chunk_seconds=2.0, sr=16000, max_duration=
                 "rolling_score": rolling_score,
                 "risk_level": level,
                 "recommended_action": action,
+                "chunks_dropped_total": n_dropped,
             }
 
 
