@@ -13,7 +13,7 @@ import joblib
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from features import extract_features  # noqa: E402
-from features_ssl import extract_ssl_features  # noqa: E402
+from features_ssl import extract_ssl_features, extract_ssl_features_truncated  # noqa: E402
 from holdout import get_quadrants  # noqa: E402
 from preprocess import load_and_preprocess  # noqa: E402
 
@@ -28,36 +28,41 @@ QUADRANT_TRUE_LABEL = {
 }
 QUADRANT_ORDER = ["clean_real", "clean_fake", "realworld_real", "realworld_fake"]
 
+XLSR_MODEL = "facebook/wav2vec2-xls-r-300m"
+BASE_MODEL = "facebook/wav2vec2-base"
+
+# (label, model_file, scaler_file, kind)
+# kind routes to the feature extractor: "mfcc" | "ssl_xlsr" | "ssl_base" |
+# "ssl_truncated" | "ssl_quantized". (c)/(d) intentionally reuse the SAME
+# classifier/scaler as the full XLS-R SSL v2 model -- the whole point is
+# testing whether a faster/quantized *feature extractor* still works with
+# the existing decision boundary, not training a new one.
 MODELS = [
     ("v1 MFCC (ASVspoof-only)", "voice_classifier.joblib", "scaler.joblib", "mfcc"),
     ("v2 MFCC (real-only aug, broken)", "voice_classifier_v2.joblib", "scaler_v2.joblib", "mfcc"),
     ("v3 MFCC (balanced aug)", "voice_classifier_v3.joblib", "scaler_v3.joblib", "mfcc"),
-    ("SSL v1 (ASVspoof-only, broken)", "voice_classifier_ssl.joblib", "scaler_ssl.joblib", "ssl"),
-    ("SSL v2 (balanced aug, wav2vec2-base)", "voice_classifier_ssl_v2_base.joblib", "scaler_ssl_v2_base.joblib", "ssl"),
-    ("SSL v2 (balanced aug, XLS-R-300M)", "voice_classifier_ssl_v2.joblib", "scaler_ssl_v2.joblib", "ssl"),
+    ("SSL v1 (ASVspoof-only, broken)", "voice_classifier_ssl.joblib", "scaler_ssl.joblib", "ssl_xlsr"),
+    ("SSL v2 (balanced aug, wav2vec2-base)", "voice_classifier_ssl_v2_base.joblib", "scaler_ssl_v2_base.joblib", "ssl_base"),
+    ("SSL v2 (balanced aug, XLS-R-300M)", "voice_classifier_ssl_v2.joblib", "scaler_ssl_v2.joblib", "ssl_xlsr"),
+    ("(c) SSL v2, XLS-R truncated", "voice_classifier_ssl_v2.joblib", "scaler_ssl_v2.joblib", "ssl_truncated"),
+    ("(d) SSL v2, XLS-R truncated+int8", "voice_classifier_ssl_v2.joblib", "scaler_ssl_v2.joblib", "ssl_quantized"),
 ]
-
-
-# embedding dim -> HF model name, since different SSL models were auto-
-# selected per run (XLS-R-300M vs the wav2vec2-base fallback) and the
-# scaler's expected input size tells us which one a given model was
-# trained with.
-SSL_DIM_TO_MODEL = {
-    2048: "facebook/wav2vec2-xls-r-300m",
-    1536: "facebook/wav2vec2-base",
-}
 
 
 def score(path, clf, scaler, kind):
     audio = load_and_preprocess(path)
     if kind == "mfcc":
         feats = extract_features(audio)
+    elif kind == "ssl_xlsr":
+        feats = extract_ssl_features(audio, model_name=XLSR_MODEL)
+    elif kind == "ssl_base":
+        feats = extract_ssl_features(audio, model_name=BASE_MODEL)
+    elif kind == "ssl_truncated":
+        feats = extract_ssl_features_truncated(audio, model_name=XLSR_MODEL, quantize=False)
+    elif kind == "ssl_quantized":
+        feats = extract_ssl_features_truncated(audio, model_name=XLSR_MODEL, quantize=True)
     else:
-        expected_dim = scaler.mean_.shape[0]
-        model_name = SSL_DIM_TO_MODEL.get(expected_dim)
-        if model_name is None:
-            raise ValueError(f"unrecognized SSL embedding dim {expected_dim}")
-        feats = extract_ssl_features(audio, model_name=model_name)
+        raise ValueError(f"unknown kind {kind}")
     feats_scaled = scaler.transform(feats.reshape(1, -1))
     proba_fake = clf.predict_proba(feats_scaled)[0][1]
     return float(proba_fake) * 100

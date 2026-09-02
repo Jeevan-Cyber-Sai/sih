@@ -9,6 +9,8 @@ on very large, acoustically diverse speech corpora, so their internal
 representations should be far less tied to any one dataset's recording
 conditions.
 """
+import copy
+
 import numpy as np
 import torch
 from transformers import Wav2Vec2FeatureExtractor, Wav2Vec2Model
@@ -50,6 +52,59 @@ def extract_ssl_features(audio, sr=16000, model_name="facebook/wav2vec2-xls-r-30
         outputs = model(**inputs, output_hidden_states=True)
 
     hidden = outputs.hidden_states[layer][0]  # (time_steps, hidden_dim)
+    mean_pooled = hidden.mean(dim=0)
+    std_pooled = hidden.std(dim=0)
+
+    vec = torch.cat([mean_pooled, std_pooled]).numpy()
+    return vec.astype(np.float32)
+
+
+_TRUNCATED_CACHE = {}
+
+
+def load_ssl_model_truncated(model_name="facebook/wav2vec2-xls-r-300m", layer=SSL_LAYER, quantize=False):
+    """A copy of the model with every encoder layer above `layer` dropped,
+    so they never execute -- we only ever read hidden_states[layer], so
+    those layers do nothing but burn CPU time in the full model.
+
+    Only reading up to `layer` is *causal*: layer i's output never
+    depends on layers > i, so hidden_states[layer] is unaffected by
+    truncation -- EXCEPT for wav2vec2's "stable layer norm" variant (used
+    by XLS-R), which applies one extra LayerNorm to the FINAL hidden
+    state only, after the loop. Truncating naively would make our target
+    layer "final" and pick up that extra norm, breaking numerical
+    equality with the untruncated model -- so we neutralize it.
+    """
+    cache_key = (model_name, layer, quantize)
+    if cache_key in _TRUNCATED_CACHE:
+        return _TRUNCATED_CACHE[cache_key]
+
+    feature_extractor, full_model = load_ssl_model(model_name)
+
+    truncated = copy.deepcopy(full_model)
+    truncated.encoder.layers = torch.nn.ModuleList(list(truncated.encoder.layers)[:layer])
+    if getattr(truncated.config, "do_stable_layer_norm", False):
+        truncated.encoder.layer_norm = torch.nn.Identity()
+    truncated.eval()
+
+    if quantize:
+        truncated = torch.quantization.quantize_dynamic(truncated, {torch.nn.Linear}, dtype=torch.qint8)
+        truncated.eval()
+
+    _TRUNCATED_CACHE[cache_key] = (feature_extractor, truncated)
+    return feature_extractor, truncated
+
+
+def extract_ssl_features_truncated(audio, sr=16000, model_name="facebook/wav2vec2-xls-r-300m",
+                                    layer=SSL_LAYER, quantize=False):
+    feature_extractor, model = load_ssl_model_truncated(model_name, layer, quantize)
+
+    inputs = feature_extractor(audio, sampling_rate=sr, return_tensors="pt")
+
+    with torch.no_grad():
+        outputs = model(**inputs, output_hidden_states=True)
+
+    hidden = outputs.hidden_states[layer][0]  # now the LAST entry -- the model IS this deep
     mean_pooled = hidden.mean(dim=0)
     std_pooled = hidden.std(dim=0)
 

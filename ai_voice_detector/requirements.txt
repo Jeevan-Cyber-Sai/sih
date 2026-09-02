@@ -11,3 +11,4 @@ imageio-ffmpeg>=0.5
 torch>=2.0
 torchaudio>=2.0
 transformers>=4.30
+psutil>=5.9

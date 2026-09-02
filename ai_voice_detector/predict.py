@@ -11,21 +11,44 @@ import librosa
 import numpy as np
 
 from features import extract_features
+from features_ssl import extract_ssl_features, load_ssl_model
 from preprocess import chunk_audio, load_and_preprocess
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 MODELS_DIR = os.path.join(ROOT, "models")
-MODEL_PATH = os.path.join(MODELS_DIR, "voice_classifier.joblib")
-SCALER_PATH = os.path.join(MODELS_DIR, "scaler.joblib")
+
+# Production backend switch: "ssl" (wav2vec2/XLS-R embeddings, current
+# best per the four-quadrant eval) or "mfcc" (original hand-crafted
+# features). Flip this one constant to roll back.
+ACTIVE_BACKEND = "ssl"
+
+MFCC_MODEL_PATH = os.path.join(MODELS_DIR, "voice_classifier.joblib")
+MFCC_SCALER_PATH = os.path.join(MODELS_DIR, "scaler.joblib")
+SSL_MODEL_PATH = os.path.join(MODELS_DIR, "voice_classifier_ssl_v2.joblib")
+SSL_SCALER_PATH = os.path.join(MODELS_DIR, "scaler_ssl_v2.joblib")
+
+if ACTIVE_BACKEND == "ssl":
+    MODEL_PATH, SCALER_PATH = SSL_MODEL_PATH, SSL_SCALER_PATH
+else:
+    MODEL_PATH, SCALER_PATH = MFCC_MODEL_PATH, MFCC_SCALER_PATH
+
+_model_cache = {}  # clf/scaler cached globally -- loaded once, never per-request
 
 
 def load_model():
+    if "clf" in _model_cache:
+        return _model_cache["clf"], _model_cache["scaler"]
+
     if not os.path.exists(MODEL_PATH) or not os.path.exists(SCALER_PATH):
         raise FileNotFoundError(
-            f"Model/scaler not found in {MODELS_DIR}. Run train.py first to train and save them."
+            f"Model/scaler not found in {MODELS_DIR}. Run train.py "
+            f"{'--augmented' if ACTIVE_BACKEND == 'mfcc' else ''} "
+            f"(or train_ssl.py --augmented) first to train and save them."
         )
     clf = joblib.load(MODEL_PATH)
     scaler = joblib.load(SCALER_PATH)
+    _model_cache["clf"] = clf
+    _model_cache["scaler"] = scaler
     return clf, scaler
 
 
@@ -39,10 +62,28 @@ def risk_level(score):
 
 
 def score_single_clip(audio, clf, scaler):
-    feats = extract_features(audio).reshape(1, -1)
+    if ACTIVE_BACKEND == "ssl":
+        feats = extract_ssl_features(audio).reshape(1, -1)
+    else:
+        feats = extract_features(audio).reshape(1, -1)
     feats_scaled = scaler.transform(feats)
     proba_fake = clf.predict_proba(feats_scaled)[0][1]
     return round(float(proba_fake) * 100, 2)
+
+
+def _warm_up():
+    """Loads the classifier/scaler and (for the SSL backend) the
+    underlying transformer model once at import time, so the first real
+    request isn't the one paying the load cost."""
+    try:
+        load_model()
+        if ACTIVE_BACKEND == "ssl":
+            load_ssl_model()
+    except FileNotFoundError:
+        pass  # models not trained yet -- let load_model() raise properly on first real use
+
+
+_warm_up()
 
 
 def analyze_file(file_path):
