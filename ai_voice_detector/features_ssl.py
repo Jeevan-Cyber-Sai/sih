@@ -1,0 +1,91 @@
+"""
+Self-supervised speech embedding features (wav2vec2 / XLS-R) as an
+alternative to the hand-crafted MFCC/spectral features in features.py.
+
+Rationale: the MFCC + RandomForest model overfit to ASVspoof2019 LA's
+narrow, clean studio recording conditions (see diagnose_mismatch.py) and
+misclassifies real-world audio. Pretrained SSL speech models are trained
+on very large, acoustically diverse speech corpora, so their internal
+representations should be far less tied to any one dataset's recording
+conditions.
+"""
+import numpy as np
+import torch
+from transformers import Wav2Vec2FeatureExtractor, Wav2Vec2Model
+
+# Intermediate transformer layers (roughly 5-9 of ~12/24) tend to carry
+# more phonetic/prosodic/spectral detail than the final layer, which
+# drifts toward higher-level linguistic content -- prior spoofing-
+# detection work (e.g. SSL-AASIST-style probing) finds mid layers more
+# discriminative for this kind of task. We use layer 6 as a reasonable
+# middle-of-that-range default.
+SSL_LAYER = 6
+
+_MODEL_CACHE = {}
+
+
+def load_ssl_model(model_name="facebook/wav2vec2-xls-r-300m"):
+    """Loads (and caches) a pretrained wav2vec2-family model + its
+    matching feature extractor. Cached globally by model_name so repeated
+    calls (e.g. once per file) don't reload the model."""
+    if model_name in _MODEL_CACHE:
+        return _MODEL_CACHE[model_name]
+
+    feature_extractor = Wav2Vec2FeatureExtractor.from_pretrained(model_name)
+    model = Wav2Vec2Model.from_pretrained(model_name)
+    model.eval()
+
+    _MODEL_CACHE[model_name] = (feature_extractor, model)
+    return feature_extractor, model
+
+
+def extract_ssl_features(audio, sr=16000, model_name="facebook/wav2vec2-xls-r-300m", layer=SSL_LAYER):
+    """Mean+std pool an intermediate hidden-state layer over time into a
+    single fixed-length vector, regardless of input audio length."""
+    feature_extractor, model = load_ssl_model(model_name)
+
+    inputs = feature_extractor(audio, sampling_rate=sr, return_tensors="pt")
+
+    with torch.no_grad():
+        outputs = model(**inputs, output_hidden_states=True)
+
+    hidden = outputs.hidden_states[layer][0]  # (time_steps, hidden_dim)
+    mean_pooled = hidden.mean(dim=0)
+    std_pooled = hidden.std(dim=0)
+
+    vec = torch.cat([mean_pooled, std_pooled]).numpy()
+    return vec.astype(np.float32)
+
+
+if __name__ == "__main__":
+    import os
+    import random
+    import time
+
+    from preprocess import load_and_preprocess
+
+    ROOT = os.path.dirname(os.path.abspath(__file__))
+    REAL_DIR = os.path.join(ROOT, "data", "real")
+    FAKE_DIR = os.path.join(ROOT, "data", "fake")
+
+    def wavs(d):
+        return [os.path.join(d, f) for f in os.listdir(d) if f.lower().endswith(".wav")]
+
+    random.seed(0)
+    sample = random.sample(wavs(REAL_DIR), 2) + random.sample(wavs(FAKE_DIR), 2)
+
+    print("loading SSL model (facebook/wav2vec2-xls-r-300m)...")
+    t0 = time.time()
+    load_ssl_model()
+    print(f"model loaded in {time.time() - t0:.1f}s")
+
+    lengths = []
+    for path in sample:
+        audio = load_and_preprocess(path)
+        t0 = time.time()
+        vec = extract_ssl_features(audio)
+        dt = time.time() - t0
+        lengths.append(len(vec))
+        print(f"{os.path.basename(path)} -> vector length {len(vec)}  ({dt:.2f}s)")
+
+    print(f"all vector lengths consistent: {len(set(lengths)) == 1} (length={lengths[0]})")

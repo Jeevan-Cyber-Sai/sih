@@ -8,4 +8,8 @@ data/real/*
 data/fake/*
 !data/fake/.gitkeep
 
+data_realworld/
+scripts/_dev-clean.tar.gz
+.ffmpeg_bin/
+
 models/*.joblib

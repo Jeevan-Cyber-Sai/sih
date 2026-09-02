@@ -7,3 +7,7 @@ soundfile>=0.12
 flask>=3.0
 matplotlib>=3.7
 sounddevice>=0.4
+imageio-ffmpeg>=0.5
+torch>=2.0
+torchaudio>=2.0
+transformers>=4.30

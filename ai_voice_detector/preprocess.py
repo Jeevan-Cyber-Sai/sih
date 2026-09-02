@@ -9,6 +9,10 @@ real-time / streaming analysis later on.
 import numpy as np
 import librosa
 
+from ensure_ffmpeg import ensure_ffmpeg_on_path
+
+ensure_ffmpeg_on_path()
+
 
 def load_and_preprocess(file_path, sr=16000, duration=3.0):
     y, sr = librosa.load(file_path, sr=sr, mono=True)
