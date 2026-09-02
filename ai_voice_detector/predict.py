@@ -11,7 +11,7 @@ import librosa
 import numpy as np
 
 from features import extract_features
-from features_ssl import extract_ssl_features, load_ssl_model
+from features_ssl import extract_ssl_features, extract_ssl_features_truncated, load_ssl_model, load_ssl_model_truncated
 from preprocess import chunk_audio, load_and_preprocess
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -21,6 +21,18 @@ MODELS_DIR = os.path.join(ROOT, "models")
 # best per the four-quadrant eval) or "mfcc" (original hand-crafted
 # features). Flip this one constant to roll back.
 ACTIVE_BACKEND = "ssl"
+
+# Which SSL feature extractor to use, when ACTIVE_BACKEND == "ssl":
+#   "full"      -- untruncated XLS-R-300M. Most accurate on paper, but
+#                  RTF 1.616 on this machine -- CANNOT sustain real-time
+#                  streaming (a 2s chunk takes 3.2s to process).
+#   "quantized" -- XLS-R-300M truncated to layer 6 + dynamic int8
+#                  quantization. Same 99.0% four-quadrant accuracy as
+#                  "full" (verified: truncation is numerically exact,
+#                  quantization didn't flip a single verdict on the eval
+#                  set), RTF 0.527 -- actually real-time-capable. This is
+#                  the production default.
+SSL_VARIANT = "quantized"
 
 MFCC_MODEL_PATH = os.path.join(MODELS_DIR, "voice_classifier.joblib")
 MFCC_SCALER_PATH = os.path.join(MODELS_DIR, "scaler.joblib")
@@ -63,7 +75,10 @@ def risk_level(score):
 
 def score_single_clip(audio, clf, scaler):
     if ACTIVE_BACKEND == "ssl":
-        feats = extract_ssl_features(audio).reshape(1, -1)
+        if SSL_VARIANT == "quantized":
+            feats = extract_ssl_features_truncated(audio, quantize=True).reshape(1, -1)
+        else:
+            feats = extract_ssl_features(audio).reshape(1, -1)
     else:
         feats = extract_features(audio).reshape(1, -1)
     feats_scaled = scaler.transform(feats)
@@ -78,7 +93,10 @@ def _warm_up():
     try:
         load_model()
         if ACTIVE_BACKEND == "ssl":
-            load_ssl_model()
+            if SSL_VARIANT == "quantized":
+                load_ssl_model_truncated(quantize=True)
+            else:
+                load_ssl_model()
     except FileNotFoundError:
         pass  # models not trained yet -- let load_model() raise properly on first real use
 

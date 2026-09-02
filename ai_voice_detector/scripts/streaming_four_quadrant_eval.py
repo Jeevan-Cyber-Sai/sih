@@ -19,7 +19,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from features import extract_features  # noqa: E402
-from features_ssl import extract_ssl_features  # noqa: E402
+from features_ssl import extract_ssl_features, extract_ssl_features_truncated  # noqa: E402
 from holdout import get_quadrants  # noqa: E402
 from preprocess import chunk_audio, load_and_preprocess  # noqa: E402
 
@@ -34,24 +34,22 @@ QUADRANT_TRUE_LABEL = {
 }
 QUADRANT_ORDER = ["clean_real", "clean_fake", "realworld_real", "realworld_fake"]
 
-SSL_DIM_TO_MODEL = {
-    2048: "facebook/wav2vec2-xls-r-300m",
-    1536: "facebook/wav2vec2-base",
-}
+XLSR_MODEL = "facebook/wav2vec2-xls-r-300m"
 
 MODELS = [
-    ("v3 MFCC (balanced aug)", "voice_classifier_v3.joblib", "scaler_v3.joblib", "mfcc"),
-    ("SSL v2 (balanced aug, XLS-R-300M)", "voice_classifier_ssl_v2.joblib", "scaler_ssl_v2.joblib", "ssl"),
+    ("(d) SSL v2, XLS-R truncated+int8 [WINNER]", "voice_classifier_ssl_v2.joblib", "scaler_ssl_v2.joblib", "ssl_quantized"),
 ]
 
 
 def score_chunk(audio, clf, scaler, kind):
     if kind == "mfcc":
         feats = extract_features(audio)
+    elif kind == "ssl_xlsr":
+        feats = extract_ssl_features(audio, model_name=XLSR_MODEL)
+    elif kind == "ssl_quantized":
+        feats = extract_ssl_features_truncated(audio, model_name=XLSR_MODEL, quantize=True)
     else:
-        expected_dim = scaler.mean_.shape[0]
-        model_name = SSL_DIM_TO_MODEL.get(expected_dim)
-        feats = extract_ssl_features(audio, model_name=model_name)
+        raise ValueError(f"unknown kind {kind}")
     feats_scaled = scaler.transform(feats.reshape(1, -1))
     proba_fake = clf.predict_proba(feats_scaled)[0][1]
     return round(float(proba_fake) * 100, 2)
