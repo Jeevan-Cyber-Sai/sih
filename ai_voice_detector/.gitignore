@@ -13,3 +13,6 @@ scripts/_dev-clean.tar.gz
 .ffmpeg_bin/
 
 models/*.joblib
+
+*.zip
+data_generators/_elevenlabs_respeecher_extract/

@@ -52,6 +52,87 @@
       <h3>Chunk log</h3>
       <div id="chunkLog" class="chunk-log"></div>
     </section>
+
+    <section class="card">
+      <h2>Transaction Approval (Demo)</h2>
+      <p class="action-text">Uses the audio file selected above. Simulates a caller trying to
+        authorize a transaction, so you can see the same audio produce different outcomes
+        depending on the risk profile and call context.</p>
+
+      <label class="field-label" for="profileSelect">Risk profile</label>
+      <select id="profileSelect" class="field-input"></select>
+
+      <div class="context-grid">
+        <label class="checkbox-label"><input type="checkbox" id="ctxCallerKnown" checked> Caller number is known</label>
+        <label class="checkbox-label"><input type="checkbox" id="ctxNewBeneficiary"> New beneficiary</label>
+        <label class="checkbox-label"><input type="checkbox" id="ctxOutsideHours"> Outside business hours</label>
+        <label class="checkbox-label"><input type="checkbox" id="ctxPreviouslyFlagged"> Caller previously flagged</label>
+
+        <label class="field-label" for="ctxOrigin">Call origin</label>
+        <select id="ctxOrigin" class="field-input">
+          <option value="domestic">Domestic</option>
+          <option value="international">International</option>
+        </select>
+
+        <label class="field-label" for="ctxChannel">Channel</label>
+        <select id="ctxChannel" class="field-input">
+          <option value="mobile">Mobile</option>
+          <option value="landline">Landline</option>
+          <option value="voip">VoIP</option>
+        </select>
+      </div>
+
+      <div class="context-grid">
+        <label class="field-label" for="txAmount">Transaction amount</label>
+        <input type="number" id="txAmount" class="field-input" value="500" min="0">
+
+        <label class="field-label" for="txBeneficiary">Beneficiary</label>
+        <input type="text" id="txBeneficiary" class="field-input" value="J. Smith">
+      </div>
+
+      <div class="button-row">
+        <button id="approveBtn" class="btn btn-primary">Approve Transaction</button>
+      </div>
+
+      <div id="approvalResult" class="hidden" style="margin-top: 16px;">
+        <div class="score-row">
+          <div class="score-number" id="approvalScore">--</div>
+          <div class="score-meta">
+            <span id="approvalLevel" class="badge">--</span>
+            <p class="action-text" id="approvalBreakdown"></p>
+          </div>
+        </div>
+
+        <div class="dual-score-grid">
+          <div class="dual-score-tile">
+            <span class="field-label">SSL score (primary)</span>
+            <div class="dual-score-value" id="sslScoreValue">--</div>
+          </div>
+          <div class="dual-score-tile">
+            <span class="field-label">MFCC score (secondary)</span>
+            <div class="dual-score-value" id="mfccScoreValue">--</div>
+          </div>
+          <div class="dual-score-tile">
+            <span class="field-label">Combined voice risk</span>
+            <div class="dual-score-value" id="combinedVoiceValue">--</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="conflictWarning" class="banner risk-medium hidden" style="margin-top: 12px;">
+        <strong>Conflicted signal</strong>
+        <p style="margin: 4px 0 0;" id="conflictText"></p>
+      </div>
+
+      <div id="approvalWarning" class="banner risk-high hidden" style="margin-top: 12px;">
+        <strong id="approvalWarningTitle"></strong>
+        <p id="approvalWarningAction" style="margin: 4px 0 0;"></p>
+      </div>
+
+      <div id="approvalSuccess" class="banner risk-low hidden" style="margin-top: 12px;">
+        Transaction approved.
+      </div>
+    </section>
   </div>
 
   <script>
@@ -193,6 +274,106 @@
       } finally {
         streamBtn.disabled = false;
         streamBtn.textContent = 'Simulate Live Stream';
+      }
+    });
+
+    // --- Transaction approval demo ---
+    const profileSelect = document.getElementById('profileSelect');
+    const approveBtn = document.getElementById('approveBtn');
+    const approvalResult = document.getElementById('approvalResult');
+    const approvalScore = document.getElementById('approvalScore');
+    const approvalLevel = document.getElementById('approvalLevel');
+    const approvalBreakdown = document.getElementById('approvalBreakdown');
+    const approvalWarning = document.getElementById('approvalWarning');
+    const approvalWarningTitle = document.getElementById('approvalWarningTitle');
+    const approvalWarningAction = document.getElementById('approvalWarningAction');
+    const approvalSuccess = document.getElementById('approvalSuccess');
+    const sslScoreValue = document.getElementById('sslScoreValue');
+    const mfccScoreValue = document.getElementById('mfccScoreValue');
+    const combinedVoiceValue = document.getElementById('combinedVoiceValue');
+    const conflictWarning = document.getElementById('conflictWarning');
+    const conflictText = document.getElementById('conflictText');
+
+    async function loadProfiles() {
+      try {
+        const res = await fetch('/profiles');
+        const data = await res.json();
+        profileSelect.innerHTML = '';
+        for (const name of Object.keys(data.profiles)) {
+          const opt = document.createElement('option');
+          opt.value = name;
+          opt.textContent = name;
+          if (name === data.default_profile) opt.selected = true;
+          profileSelect.appendChild(opt);
+        }
+      } catch (e) {
+        profileSelect.innerHTML = '<option value="routine">routine</option>';
+      }
+    }
+    loadProfiles();
+
+    approveBtn.addEventListener('click', async () => {
+      const file = requireFile();
+      if (!file) return;
+
+      approvalResult.classList.add('hidden');
+      approvalWarning.classList.add('hidden');
+      approvalSuccess.classList.add('hidden');
+      conflictWarning.classList.add('hidden');
+
+      const formData = new FormData();
+      formData.append('audio', file);
+      formData.append('profile', profileSelect.value);
+      formData.append('caller_known', document.getElementById('ctxCallerKnown').checked);
+      formData.append('origin', document.getElementById('ctxOrigin').value);
+      formData.append('channel', document.getElementById('ctxChannel').value);
+      formData.append('transaction_amount', document.getElementById('txAmount').value);
+      formData.append('new_beneficiary', document.getElementById('ctxNewBeneficiary').checked);
+      formData.append('outside_business_hours', document.getElementById('ctxOutsideHours').checked);
+      formData.append('previously_flagged', document.getElementById('ctxPreviouslyFlagged').checked);
+
+      approveBtn.disabled = true;
+      approveBtn.textContent = 'Checking...';
+
+      try {
+        const res = await fetch('/analyze_with_context', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.error) { alert('Error: ' + data.error); return; }
+
+        const cls = riskClass(data.risk_level);
+
+        approvalResult.classList.remove('hidden');
+        approvalScore.textContent = data.final_risk.toFixed(2);
+        approvalLevel.textContent = data.risk_level;
+        approvalBreakdown.textContent =
+          `voice risk ${data.voice_risk.toFixed(2)} + context risk ${data.context_risk.toFixed(2)} `
+          + `(profile: ${data.profile})`;
+
+        sslScoreValue.textContent = data.ssl_score.toFixed(2);
+        mfccScoreValue.textContent = data.mfcc_score.toFixed(2);
+        combinedVoiceValue.textContent = data.voice_risk.toFixed(2);
+
+        if (data.conflicted) {
+          conflictWarning.classList.remove('hidden');
+          conflictText.textContent =
+            `SSL and MFCC disagree by ${Math.abs(data.ssl_score - data.mfcc_score).toFixed(2)} points `
+            + `(SSL=${data.ssl_score.toFixed(2)}, MFCC=${data.mfcc_score.toFixed(2)}) -- treat this result with caution.`;
+        }
+
+        if (data.risk_level === 'LOW') {
+          approvalSuccess.classList.remove('hidden');
+        } else {
+          approvalWarning.className = 'banner ' + cls;
+          approvalWarning.classList.remove('hidden');
+          approvalWarningTitle.textContent =
+            `Transaction blocked -- ${data.risk_level} impersonation risk (score ${data.final_risk.toFixed(2)})`;
+          approvalWarningAction.textContent = data.recommended_action;
+        }
+      } catch (e) {
+        alert('Request failed: ' + e.message);
+      } finally {
+        approveBtn.disabled = false;
+        approveBtn.textContent = 'Approve Transaction';
       }
     });
   </script>

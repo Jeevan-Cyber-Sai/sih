@@ -1,0 +1,51 @@
+# Named risk profiles: each defines its own LOW/MEDIUM/HIGH thresholds and
+# how much weight voice-risk vs contextual-risk carries in the final score.
+# A "routine" call and a call authorizing a large transfer should NOT be
+# held to the same bar -- this is how that's expressed without touching code.
+default_profile: routine
+
+profiles:
+  routine:
+    low_threshold: 30
+    high_threshold: 70
+    voice_weight: 0.8
+    context_weight: 0.2
+
+  high_value_transaction:
+    # more conservative: escalates to MEDIUM/HIGH sooner, and leans more
+    # on context (large amount, new beneficiary, etc.) since the cost of
+    # a false negative here is money actually leaving the account.
+    low_threshold: 20
+    high_threshold: 55
+    voice_weight: 0.6
+    context_weight: 0.4
+
+  privileged_access:
+    # e.g. resetting credentials, granting access -- similarly
+    # conservative to high_value_transaction.
+    low_threshold: 20
+    high_threshold: 50
+    voice_weight: 0.6
+    context_weight: 0.4
+
+# Additive contextual risk scoring. Each flag contributes points if
+# present/true; total is capped at 100. These are all *escalating* signals
+# only -- see risk_engine.py's compute_final_risk() for why context is
+# never allowed to suppress a voice-level HIGH finding.
+context_scoring:
+  unknown_caller: 25          # caller_known == False
+  voip_origin: 15             # channel == "voip"
+  international_origin: 10    # origin == "international"
+  large_transaction: 20       # transaction_amount >= large_transaction_threshold
+  large_transaction_threshold: 10000
+  new_beneficiary: 20         # new_beneficiary == True
+  outside_business_hours: 10  # outside_business_hours == True
+  previously_flagged: 30      # previously_flagged == True
+  cap: 100
+
+privacy:
+  # "none"          -- no persistent logging of anything derived from a call
+  # "features_only" -- persist structured risk events (scores/level/profile/
+  #                    context flags) to logs/risk_events.jsonl; still never
+  #                    audio, transcripts, or file paths to audio
+  retention_mode: none

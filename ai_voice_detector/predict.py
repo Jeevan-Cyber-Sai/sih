@@ -11,8 +11,15 @@ import librosa
 import numpy as np
 
 from features import extract_features
-from features_ssl import extract_ssl_features, extract_ssl_features_truncated, load_ssl_model, load_ssl_model_truncated
+from features_ssl import (
+    extract_ssl_features,
+    extract_ssl_features_truncated_direct,
+    load_ssl_model,
+    load_ssl_model_truncated_direct,
+)
 from preprocess import chunk_audio, load_and_preprocess
+from privacy import log_risk_event, zero_buffer
+from risk_engine import compute_final_risk, risk_level_for_profile
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 MODELS_DIR = os.path.join(ROOT, "models")
@@ -22,17 +29,30 @@ MODELS_DIR = os.path.join(ROOT, "models")
 # features). Flip this one constant to roll back.
 ACTIVE_BACKEND = "ssl"
 
-# Which SSL feature extractor to use, when ACTIVE_BACKEND == "ssl":
-#   "full"      -- untruncated XLS-R-300M. Most accurate on paper, but
-#                  RTF 1.616 on this machine -- CANNOT sustain real-time
-#                  streaming (a 2s chunk takes 3.2s to process).
-#   "quantized" -- XLS-R-300M truncated to layer 6 + dynamic int8
-#                  quantization. Same 99.0% four-quadrant accuracy as
-#                  "full" (verified: truncation is numerically exact,
-#                  quantization didn't flip a single verdict on the eval
-#                  set), RTF 0.527 -- actually real-time-capable. This is
-#                  the production default.
-SSL_VARIANT = "quantized"
+# Which SSL feature extractor to use, when ACTIVE_BACKEND == "ssl". Uses
+# the "_direct" loaders (build the architecture at num_hidden_layers=N
+# from the start) rather than the deepcopy-then-slice ones -- deepcopy
+# transiently holds the full 24-layer model AND its copy at once, which
+# inflates peak RAM without reflecting real standalone usage.
+#   "full"       -- untruncated XLS-R-300M. RTF 0.358, peak RAM ~1768MB
+#                   (clean, isolated measurements) -- real-time-capable on
+#                   its own, just slower/heavier than the alternative below.
+#   "truncated"  -- XLS-R-300M truncated to layer 6 (the deeper layers are
+#                   never executed since we only read hidden_states[6]).
+#                   Numerically EXACT match to "full" (verified, max abs
+#                   diff 0.0), same 99.0% four-quadrant accuracy, RTF
+#                   0.116 (~3x speedup) AND peak RAM ~894MB (~2x lighter)
+#                   -- strictly better than "full" on every axis measured.
+#                   This is the production default.
+#   "quantized"  -- truncated + dynamic int8 quantization on top. Speed is
+#                   statistically indistinguishable from "truncated" alone
+#                   (231.4ms vs 231.0ms, within each other's std), AND peak
+#                   RAM is actually *higher* (~1352MB vs ~894MB) -- the
+#                   conversion step transiently holds both the fp32 and
+#                   int8 weights at once. Strictly worse than "truncated"
+#                   on this machine; kept available in case it helps more
+#                   elsewhere (e.g. a CPU with stronger int8 SIMD support).
+SSL_VARIANT = "truncated"
 
 MFCC_MODEL_PATH = os.path.join(MODELS_DIR, "voice_classifier.joblib")
 MFCC_SCALER_PATH = os.path.join(MODELS_DIR, "scaler.joblib")
@@ -64,19 +84,42 @@ def load_model():
     return clf, scaler
 
 
-def risk_level(score):
-    if score < 30:
-        return "LOW", "No action needed. Proceed normally."
-    elif score < 70:
-        return "MEDIUM", "Recommend secondary verification (callback or OTP)."
-    else:
-        return "HIGH", "High impersonation risk. Block transaction / escalate to supervisor."
+# MFCC v3 loaded as a second, independent opinion alongside whichever
+# model ACTIVE_BACKEND points at -- see score_dual().
+MFCC_V3_MODEL_PATH = os.path.join(MODELS_DIR, "voice_classifier_v3.joblib")
+MFCC_V3_SCALER_PATH = os.path.join(MODELS_DIR, "scaler_v3.joblib")
+
+_mfcc_v3_cache = {}
+
+
+def load_mfcc_v3_model():
+    if "clf" in _mfcc_v3_cache:
+        return _mfcc_v3_cache["clf"], _mfcc_v3_cache["scaler"]
+
+    if not os.path.exists(MFCC_V3_MODEL_PATH) or not os.path.exists(MFCC_V3_SCALER_PATH):
+        raise FileNotFoundError(
+            f"MFCC v3 model/scaler not found in {MODELS_DIR}. Run train.py --augmented first."
+        )
+    clf = joblib.load(MFCC_V3_MODEL_PATH)
+    scaler = joblib.load(MFCC_V3_SCALER_PATH)
+    _mfcc_v3_cache["clf"] = clf
+    _mfcc_v3_cache["scaler"] = scaler
+    return clf, scaler
+
+
+def risk_level(score, profile=None):
+    """LOW/MEDIUM/HIGH classification using the named profile's thresholds
+    (config.yaml) -- defaults to the "routine" profile (30/70), so every
+    existing caller that doesn't pass `profile` keeps its old behavior."""
+    return risk_level_for_profile(score, profile)
 
 
 def score_single_clip(audio, clf, scaler):
     if ACTIVE_BACKEND == "ssl":
         if SSL_VARIANT == "quantized":
-            feats = extract_ssl_features_truncated(audio, quantize=True).reshape(1, -1)
+            feats = extract_ssl_features_truncated_direct(audio, quantize=True).reshape(1, -1)
+        elif SSL_VARIANT == "truncated":
+            feats = extract_ssl_features_truncated_direct(audio, quantize=False).reshape(1, -1)
         else:
             feats = extract_ssl_features(audio).reshape(1, -1)
     else:
@@ -86,34 +129,122 @@ def score_single_clip(audio, clf, scaler):
     return round(float(proba_fake) * 100, 2)
 
 
+# Dual-scoring: SSL is the primary/production model, MFCC v3 runs as an
+# independent second opinion using entirely different features (hand-
+# crafted spectral/pitch stats vs. a pretrained transformer's learned
+# representation). Two architectures rarely share the same blind spots,
+# so large disagreement between them is itself a useful signal.
+DUAL_SCORE_WEIGHTS = {"ssl": 0.7, "mfcc": 0.3}
+CONFLICT_THRESHOLD = 40  # point gap between the two scores that counts as "conflicted"
+
+
+def score_dual(audio):
+    """Scores `audio` with both the SSL model and the MFCC v3 model
+    independently, returning both raw scores plus a weighted combination.
+    Flags large disagreement (e.g. one says LOW, the other HIGH) as
+    "conflicted" -- surfaced separately rather than silently averaged
+    away, since that disagreement is diagnostically useful on its own."""
+    ssl_clf, ssl_scaler = load_model()
+    mfcc_clf, mfcc_scaler = load_mfcc_v3_model()
+
+    ssl_score = score_single_clip(audio, ssl_clf, ssl_scaler)
+
+    mfcc_feats = extract_features(audio).reshape(1, -1)
+    mfcc_feats_scaled = mfcc_scaler.transform(mfcc_feats)
+    mfcc_score = round(float(mfcc_clf.predict_proba(mfcc_feats_scaled)[0][1]) * 100, 2)
+
+    final_voice_risk = round(
+        ssl_score * DUAL_SCORE_WEIGHTS["ssl"] + mfcc_score * DUAL_SCORE_WEIGHTS["mfcc"], 2
+    )
+    conflicted = abs(ssl_score - mfcc_score) > CONFLICT_THRESHOLD
+
+    return {
+        "ssl_score": ssl_score,
+        "mfcc_score": mfcc_score,
+        "final_voice_risk": final_voice_risk,
+        "conflicted": conflicted,
+    }
+
+
 def _warm_up():
     """Loads the classifier/scaler and (for the SSL backend) the
     underlying transformer model once at import time, so the first real
-    request isn't the one paying the load cost."""
+    request isn't the one paying the load cost. Also warms up the MFCC v3
+    "second opinion" model used by score_dual()."""
     try:
         load_model()
         if ACTIVE_BACKEND == "ssl":
             if SSL_VARIANT == "quantized":
-                load_ssl_model_truncated(quantize=True)
+                load_ssl_model_truncated_direct(quantize=True)
+            elif SSL_VARIANT == "truncated":
+                load_ssl_model_truncated_direct(quantize=False)
             else:
                 load_ssl_model()
     except FileNotFoundError:
         pass  # models not trained yet -- let load_model() raise properly on first real use
 
+    try:
+        load_mfcc_v3_model()
+    except FileNotFoundError:
+        pass  # same -- let score_dual() raise properly on first real use
+
 
 _warm_up()
 
 
-def analyze_file(file_path):
+def analyze_file(file_path, profile=None):
     clf, scaler = load_model()
     audio = load_and_preprocess(file_path)
     score = score_single_clip(audio, clf, scaler)
-    level, action = risk_level(score)
+    zero_buffer(audio)  # privacy: don't let the raw waveform linger in memory
+    level, action = risk_level(score, profile)
     return {
         "file": file_path,
         "risk_score": score,
         "risk_level": level,
         "recommended_action": action,
+    }
+
+
+def analyze_file_with_context(file_path, context=None, profile=None):
+    """Voice risk + contextual risk enrichment, combined per the active
+    profile's weights (see risk_engine.compute_final_risk for the
+    security-critical asymmetry: context can escalate, never suppress).
+
+    Voice risk itself now comes from score_dual() -- SSL (primary) + MFCC
+    v3 (independent second opinion) -- rather than a single model."""
+    audio = load_and_preprocess(file_path)
+    dual = score_dual(audio)
+    zero_buffer(audio)
+
+    result = compute_final_risk(dual["final_voice_risk"], context, profile)
+    result["ssl_score"] = dual["ssl_score"]
+    result["mfcc_score"] = dual["mfcc_score"]
+    result["conflicted"] = dual["conflicted"]
+
+    log_risk_event({
+        "voice_risk": result["voice_risk"],
+        "context_risk": result["context_risk"],
+        "final_risk": result["final_risk"],
+        "risk_level": result["risk_level"],
+        "profile": result["profile"],
+        "context_flags": _extract_context_flags(context),
+    })
+    return result
+
+
+def _extract_context_flags(context):
+    """Boolean/categorical flags only, for logging -- never the raw
+    context dict verbatim in case a caller ever adds a free-text field."""
+    context = context or {}
+    return {
+        "caller_known": context.get("caller_known"),
+        "origin": context.get("origin"),
+        "channel": context.get("channel"),
+        "large_transaction": bool(context.get("transaction_amount")),
+        "new_beneficiary": bool(context.get("new_beneficiary")),
+        "outside_business_hours": bool(context.get("outside_business_hours")),
+        "previously_flagged": bool(context.get("previously_flagged")),
     }
 
 
@@ -133,6 +264,7 @@ def stream_chunks(file_path, chunk_seconds=2.0, overlap=0.5, alpha=0.6):
     rolling_score = None
     for i, chunk in enumerate(chunks):
         instant_score = score_single_clip(chunk, clf, scaler)
+        zero_buffer(chunk)  # privacy: don't let the raw chunk linger in memory
         rolling_score = instant_score if rolling_score is None else (
             alpha * instant_score + (1 - alpha) * rolling_score
         )
@@ -147,6 +279,8 @@ def stream_chunks(file_path, chunk_seconds=2.0, overlap=0.5, alpha=0.6):
             "risk_level": level,
             "recommended_action": action,
         }
+
+    zero_buffer(y)  # privacy: full-file buffer, done with it after chunking
 
 
 def analyze_stream(file_path, chunk_seconds=2.0, overlap=0.5, delay=0.3, alpha=0.6):

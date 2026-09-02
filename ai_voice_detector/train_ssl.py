@@ -49,6 +49,16 @@ REAL_DIR = os.path.join(ROOT, "data", "real")
 FAKE_DIR = os.path.join(ROOT, "data", "fake")
 REALWORLD_REAL_DIR = os.path.join(ROOT, "data_realworld", "real")
 REALWORLD_FAKE_DIR = os.path.join(ROOT, "data_realworld", "fake")
+GENERATORS_DIR = os.path.join(ROOT, "data_generators")
+# Real commercial voice-conversion/TTS sources (ElevenLabs, Respeecher) plus
+# our own kNN-VC voice conversion samples -- closes the LOGO generalization
+# gap. sapi/piper/edgetts deliberately stay OUT of training (pure held-out
+# generalization checks).
+GENERATOR_FAKE_DIRS = [
+    os.path.join(GENERATORS_DIR, "elevenlabs"),
+    os.path.join(GENERATORS_DIR, "respeecher"),
+    os.path.join(GENERATORS_DIR, "knnvc"),
+]
 MODELS_DIR = os.path.join(ROOT, "models")
 CACHE_DIR = os.path.join(ROOT, "cache")
 EMBED_CACHE_DIR = os.path.join(CACHE_DIR, "ssl_embeddings")
@@ -185,6 +195,7 @@ def main():
 
     if args.augmented:
         sources = [(REAL_DIR, 0), (REALWORLD_REAL_DIR, 0), (FAKE_DIR, 1), (REALWORLD_FAKE_DIR, 1)]
+        sources += [(d, 1) for d in GENERATOR_FAKE_DIRS]
         model_out, scaler_out = "voice_classifier_ssl_v2.joblib", "scaler_ssl_v2.joblib"
     else:
         sources = [(REAL_DIR, 0), (FAKE_DIR, 1)]
@@ -219,9 +230,9 @@ def main():
     X_scaled = scaler.fit_transform(X)
 
     candidates = {
-        "RandomForest": lambda: RandomForestClassifier(n_estimators=200, random_state=42),
+        "RandomForest": lambda: RandomForestClassifier(n_estimators=200, random_state=42, class_weight="balanced"),
         "MLP (128,64)": lambda: MLPClassifier(hidden_layer_sizes=(128, 64), max_iter=500, random_state=42),
-        "LogisticRegression": lambda: LogisticRegression(max_iter=2000, random_state=42),
+        "LogisticRegression": lambda: LogisticRegression(max_iter=2000, random_state=42, class_weight="balanced"),
     }
     summaries = {name: evaluate_classifier(name, factory, X_scaled, y)
                  for name, factory in candidates.items()}

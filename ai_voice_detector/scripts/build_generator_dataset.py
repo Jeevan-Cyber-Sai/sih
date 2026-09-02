@@ -65,12 +65,38 @@ def load_sentences(n_needed, seed, skip=0):
     return filtered[skip:skip + n_needed]
 
 
-def build_sapi(sentences, out_dir, seed):
+def _get_voice_ids():
     import pyttsx3
+    probe = pyttsx3.init()
+    ids = [v.id for v in probe.getProperty("voices")]
+    probe.stop()
+    return ids
 
+
+def _synth_one_sapi(text, voice_id, tmp_path, timeout=15):
+    """Runs a single SAPI synthesis in its own subprocess with a timeout --
+    pyttsx3 engines are known to hang on Windows if reused across many
+    runAndWait() calls, and even a fresh-per-call engine can occasionally
+    stall, so isolate + bound every call rather than risk the whole batch."""
+    import subprocess
+    code = (
+        "import pyttsx3, sys\n"
+        "e = pyttsx3.init()\n"
+        f"e.setProperty('voice', {voice_id!r})\n"
+        f"e.save_to_file({text!r}, {tmp_path!r})\n"
+        "e.runAndWait()\n"
+    )
+    try:
+        subprocess.run([sys.executable, "-c", code], timeout=timeout,
+                        capture_output=True, check=True)
+        return True
+    except Exception:
+        return False
+
+
+def build_sapi(sentences, out_dir, seed):
     os.makedirs(out_dir, exist_ok=True)
-    engine = pyttsx3.init()
-    voices = engine.getProperty("voices")
+    voice_ids = _get_voice_ids()
     rng = random.Random(seed)
     rng2 = np.random.default_rng(seed)
 
@@ -81,11 +107,11 @@ def build_sapi(sentences, out_dir, seed):
             n_ok += 1
             continue
         try:
-            voice = rng.choice(voices)
-            engine.setProperty("voice", voice.id)
+            voice_id = rng.choice(voice_ids)
             tmp_path = out_path + ".raw.wav"
-            engine.save_to_file(text, tmp_path)
-            engine.runAndWait()
+            if not _synth_one_sapi(text, voice_id, tmp_path):
+                log(f"  SKIPPED sapi {i}: synthesis timed out or failed")
+                continue
 
             audio, sr = sf.read(tmp_path)
             if audio.ndim > 1:
@@ -141,6 +167,60 @@ def build_piper(sentences, out_dir, seed, voice_path):
             log(f"  SKIPPED piper {i}: {e}")
         if (i + 1) % 20 == 0:
             log(f"  piper: {i + 1}/{len(sentences)}")
+    return n_ok
+
+
+EDGE_VOICES = ["en-US-AriaNeural", "en-US-GuyNeural", "en-GB-SoniaNeural", "en-IN-NeerjaNeural"]
+
+
+def _synth_one_edge(text, voice, tmp_path, timeout=15):
+    """Isolated subprocess per call, same rationale as SAPI: don't let one
+    stalled network call hang the whole batch."""
+    import subprocess
+    code = (
+        "import asyncio, edge_tts\n"
+        "async def main():\n"
+        f"    c = edge_tts.Communicate({text!r}, {voice!r})\n"
+        f"    await c.save({tmp_path!r})\n"
+        "asyncio.run(main())\n"
+    )
+    try:
+        subprocess.run([sys.executable, "-c", code], timeout=timeout,
+                        capture_output=True, check=True)
+        return True
+    except Exception:
+        return False
+
+
+def build_edge_tts(sentences, out_dir, seed):
+    os.makedirs(out_dir, exist_ok=True)
+    rng = random.Random(seed)
+    rng2 = np.random.default_rng(seed)
+
+    n_ok = 0
+    for i, text in enumerate(sentences):
+        out_path = os.path.join(out_dir, f"edgetts_{i:04d}.wav")
+        if os.path.exists(out_path):
+            n_ok += 1
+            continue
+        try:
+            voice = rng.choice(EDGE_VOICES)
+            tmp_path = out_path + ".raw.mp3"
+            if not _synth_one_edge(text, voice, tmp_path):
+                log(f"  SKIPPED edgetts {i}: synthesis timed out or failed")
+                continue
+
+            import librosa
+            audio, sr = librosa.load(tmp_path, sr=16000, mono=True)
+            audio = audio.astype(np.float32)
+            degraded, _ = apply_random_degradation(audio, sr, rng2)
+            sf.write(out_path, degraded, sr)
+            os.remove(tmp_path)
+            n_ok += 1
+        except Exception as e:
+            log(f"  SKIPPED edgetts {i}: {e}")
+        if (i + 1) % 20 == 0:
+            log(f"  edgetts: {i + 1}/{len(sentences)}")
     return n_ok
 
 
@@ -215,6 +295,16 @@ def main():
     update_manifest([
         {"path": f"data_generators/piper/{f}", "generator": "piper"}
         for f in os.listdir(piper_dir) if f.lower().endswith(".wav")
+    ])
+
+    log("\nbuilding Edge-TTS (Microsoft neural cloud TTS) generator...")
+    edge_sentences = load_sentences(N_PER_GENERATOR, SEED, skip=2 * N_PER_GENERATOR)
+    edge_dir = os.path.join(OUT_ROOT, "edgetts")
+    n_edge = build_edge_tts(edge_sentences, edge_dir, SEED)
+    log(f"  edgetts: {n_edge}/{len(edge_sentences)} generated")
+    update_manifest([
+        {"path": f"data_generators/edgetts/{f}", "generator": "edgetts"}
+        for f in os.listdir(edge_dir) if f.lower().endswith(".wav")
     ])
 
     manifest = json.load(open(MANIFEST_PATH))

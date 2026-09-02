@@ -13,7 +13,7 @@ import copy
 
 import numpy as np
 import torch
-from transformers import Wav2Vec2FeatureExtractor, Wav2Vec2Model
+from transformers import Wav2Vec2Config, Wav2Vec2FeatureExtractor, Wav2Vec2Model
 
 # Intermediate transformer layers (roughly 5-9 of ~12/24) tend to carry
 # more phonetic/prosodic/spectral detail than the final layer, which
@@ -93,6 +93,52 @@ def load_ssl_model_truncated(model_name="facebook/wav2vec2-xls-r-300m", layer=SS
 
     _TRUNCATED_CACHE[cache_key] = (feature_extractor, truncated)
     return feature_extractor, truncated
+
+
+_TRUNCATED_DIRECT_CACHE = {}
+
+
+def load_ssl_model_truncated_direct(model_name="facebook/wav2vec2-xls-r-300m", layer=SSL_LAYER, quantize=False):
+    """Same numerical result as load_ssl_model_truncated(), but never
+    materializes the full 24-layer model at all: builds the architecture
+    with num_hidden_layers=layer from the start, so from_pretrained only
+    allocates the layers we keep (the checkpoint's extra layer weights
+    are just skipped as "unexpected", not loaded). Use this -- not the
+    deepcopy-based version -- when standalone memory footprint matters,
+    e.g. measuring true production RAM."""
+    cache_key = (model_name, layer, quantize)
+    if cache_key in _TRUNCATED_DIRECT_CACHE:
+        return _TRUNCATED_DIRECT_CACHE[cache_key]
+
+    feature_extractor = Wav2Vec2FeatureExtractor.from_pretrained(model_name)
+    config = Wav2Vec2Config.from_pretrained(model_name)
+    config.num_hidden_layers = layer
+    model = Wav2Vec2Model.from_pretrained(model_name, config=config)
+    model.eval()
+    if getattr(config, "do_stable_layer_norm", False):
+        model.encoder.layer_norm = torch.nn.Identity()
+
+    if quantize:
+        model = torch.quantization.quantize_dynamic(model, {torch.nn.Linear}, dtype=torch.qint8)
+        model.eval()
+
+    _TRUNCATED_DIRECT_CACHE[cache_key] = (feature_extractor, model)
+    return feature_extractor, model
+
+
+def extract_ssl_features_truncated_direct(audio, sr=16000, model_name="facebook/wav2vec2-xls-r-300m",
+                                           layer=SSL_LAYER, quantize=False):
+    feature_extractor, model = load_ssl_model_truncated_direct(model_name, layer, quantize)
+
+    inputs = feature_extractor(audio, sampling_rate=sr, return_tensors="pt")
+    with torch.no_grad():
+        outputs = model(**inputs, output_hidden_states=True)
+
+    hidden = outputs.hidden_states[layer][0]
+    mean_pooled = hidden.mean(dim=0)
+    std_pooled = hidden.std(dim=0)
+    vec = torch.cat([mean_pooled, std_pooled]).numpy()
+    return vec.astype(np.float32)
 
 
 def extract_ssl_features_truncated(audio, sr=16000, model_name="facebook/wav2vec2-xls-r-300m",

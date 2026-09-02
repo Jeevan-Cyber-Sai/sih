@@ -30,6 +30,18 @@ REAL_DIR = os.path.join(ROOT, "data", "real")
 FAKE_DIR = os.path.join(ROOT, "data", "fake")
 REALWORLD_REAL_DIR = os.path.join(ROOT, "data_realworld", "real")
 REALWORLD_FAKE_DIR = os.path.join(ROOT, "data_realworld", "fake")
+GENERATORS_DIR = os.path.join(ROOT, "data_generators")
+# Real commercial voice-conversion/TTS sources (ElevenLabs, Respeecher) and
+# our own kNN-VC-generated voice conversion samples -- added to close the
+# generalization gap leave-one-generator-out testing found (see
+# scripts/leave_one_generator_out_eval.py). sapi/piper/edgetts deliberately
+# stay OUT of production training -- they remain pure held-out generators
+# for future generalization checks.
+GENERATOR_FAKE_DIRS = [
+    os.path.join(GENERATORS_DIR, "elevenlabs"),
+    os.path.join(GENERATORS_DIR, "respeecher"),
+    os.path.join(GENERATORS_DIR, "knnvc"),
+]
 MODELS_DIR = os.path.join(ROOT, "models")
 
 LABELS = {"real": 0, "fake": 1}
@@ -81,14 +93,18 @@ def build_dataset():
 def build_dataset_augmented():
     """v3 dataset: adds data_realworld/real/ (real-world genuine speech)
     to the real class AND data_realworld/fake/ (modern TTS + degraded
-    ASVspoof copies) to the fake class -- balanced diversification on
-    both sides, so the model can't shortcut on "degraded = real"."""
-    return _build_dataset_from_sources([
+    ASVspoof copies) plus real commercial VC/TTS generators (ElevenLabs,
+    Respeecher, kNN-VC) to the fake class -- balanced diversification on
+    both sides, so the model can't shortcut on "degraded = real", plus
+    real voice-conversion diversity to close the LOGO generalization gap."""
+    sources = [
         (REAL_DIR, 0),
         (REALWORLD_REAL_DIR, 0),
         (FAKE_DIR, 1),
         (REALWORLD_FAKE_DIR, 1),
-    ])
+    ]
+    sources += [(d, 1) for d in GENERATOR_FAKE_DIRS]
+    return _build_dataset_from_sources(sources)
 
 
 def train_and_evaluate(X, y):
@@ -102,7 +118,7 @@ def train_and_evaluate(X, y):
         X_train, X_test = X_scaled[train_idx], X_scaled[test_idx]
         y_train, y_test = y[train_idx], y[test_idx]
 
-        clf = RandomForestClassifier(n_estimators=200, random_state=42)
+        clf = RandomForestClassifier(n_estimators=200, random_state=42, class_weight="balanced")
         clf.fit(X_train, y_train)
         preds = clf.predict(X_test)
 
@@ -122,7 +138,7 @@ def train_and_evaluate(X, y):
     X_train, X_test, y_train, y_test = train_test_split(
         X_scaled, y, test_size=0.2, stratify=y, random_state=42
     )
-    holdout_clf = RandomForestClassifier(n_estimators=200, random_state=42)
+    holdout_clf = RandomForestClassifier(n_estimators=200, random_state=42, class_weight="balanced")
     holdout_clf.fit(X_train, y_train)
     preds = holdout_clf.predict(X_test)
 
@@ -132,7 +148,7 @@ def train_and_evaluate(X, y):
     print("\nClassification report:")
     print(classification_report(y_test, preds, target_names=["real", "fake"]))
 
-    final_model = RandomForestClassifier(n_estimators=200, random_state=42)
+    final_model = RandomForestClassifier(n_estimators=200, random_state=42, class_weight="balanced")
     final_model.fit(X_scaled, y)
 
     return final_model, scaler
