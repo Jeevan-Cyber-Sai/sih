@@ -1,0 +1,1654 @@
+[
+  {
+    "path": "data/real/LA_D_1714000.wav",
+    "quadrant": "clean_real"
+  },
+  {
+    "path": "data/real/LA_D_4621778.wav",
+    "quadrant": "clean_real"
+  },
+  {
+    "path": "data/real/LA_D_2105580.wav",
+    "quadrant": "clean_real"
+  },
+  {
+    "path": "data/real/LA_D_6609032.wav",
+    "quadrant": "clean_real"
+  },
+  {
+    "path": "data/real/LA_D_4599043.wav",
+    "quadrant": "clean_real"
+  },
+  {
+    "path": "data/real/LA_D_2531373.wav",
+    "quadrant": "clean_real"
+  },
+  {
+    "path": "data/real/LA_D_1481057.wav",
+    "quadrant": "clean_real"
+  },
+  {
+    "path": "data/real/LA_D_6289915.wav",
+    "quadrant": "clean_real"
+  },
+  {
+    "path": "data/real/LA_D_8238260.wav",
+    "quadrant": "clean_real"
+  },
+  {
+    "path": "data/real/LA_D_8498981.wav",
+    "quadrant": "clean_real"
+  },
+  {
+    "path": "data/real/LA_D_5660085.wav",
+    "quadrant": "clean_real"
+  },
+  {
+    "path": "data/real/LA_D_5770185.wav",
+    "quadrant": "clean_real"
+  },
+  {
+    "path": "data/real/LA_D_3286517.wav",
+    "quadrant": "clean_real"
+  },
+  {
+    "path": "data/real/LA_D_2944634.wav",
+    "quadrant": "clean_real"
+  },
+  {
+    "path": "data/real/LA_D_5704754.wav",
+    "quadrant": "clean_real"
+  },
+  {
+    "path": "data/real/LA_D_8494760.wav",
+    "quadrant": "clean_real"
+  },
+  {
+    "path": "data/real/LA_D_5666784.wav",
+    "quadrant": "clean_real"
+  },
+  {
+    "path": "data/real/LA_D_4354056.wav",
+    "quadrant": "clean_real"
+  },
+  {
+    "path": "data/real/LA_D_3316221.wav",
+    "quadrant": "clean_real"
+  },
+  {
+    "path": "data/real/LA_D_1069525.wav",
+    "quadrant": "clean_real"
+  },
+  {
+    "path": "data/real/LA_D_6994349.wav",
+    "quadrant": "clean_real"
+  },
+  {
+    "path": "data/real/LA_D_8978448.wav",
+    "quadrant": "clean_real"
+  },
+  {
+    "path": "data/real/LA_D_6288751.wav",
+    "quadrant": "clean_real"
+  },
+  {
+    "path": "data/real/LA_D_1874320.wav",
+    "quadrant": "clean_real"
+  },
+  {
+    "path": "data/real/LA_D_1118564.wav",
+    "quadrant": "clean_real"
+  },
+  {
+    "path": "data/real/LA_D_5349132.wav",
+    "quadrant": "clean_real"
+  },
+  {
+    "path": "data/real/LA_D_7114977.wav",
+    "quadrant": "clean_real"
+  },
+  {
+    "path": "data/real/LA_D_2417193.wav",
+    "quadrant": "clean_real"
+  },
+  {
+    "path": "data/real/LA_D_1570970.wav",
+    "quadrant": "clean_real"
+  },
+  {
+    "path": "data/real/LA_D_2223225.wav",
+    "quadrant": "clean_real"
+  },
+  {
+    "path": "data/fake/LA_D_9744020.wav",
+    "quadrant": "clean_fake"
+  },
+  {
+    "path": "data/fake/LA_D_2879814.wav",
+    "quadrant": "clean_fake"
+  },
+  {
+    "path": "data/fake/LA_D_2665201.wav",
+    "quadrant": "clean_fake"
+  },
+  {
+    "path": "data/fake/LA_D_1319176.wav",
+    "quadrant": "clean_fake"
+  },
+  {
+    "path": "data/fake/LA_D_4928075.wav",
+    "quadrant": "clean_fake"
+  },
+  {
+    "path": "data/fake/LA_D_6725130.wav",
+    "quadrant": "clean_fake"
+  },
+  {
+    "path": "data/fake/LA_D_8546378.wav",
+    "quadrant": "clean_fake"
+  },
+  {
+    "path": "data/fake/LA_D_7380127.wav",
+    "quadrant": "clean_fake"
+  },
+  {
+    "path": "data/fake/LA_D_4657107.wav",
+    "quadrant": "clean_fake"
+  },
+  {
+    "path": "data/fake/LA_D_7303743.wav",
+    "quadrant": "clean_fake"
+  },
+  {
+    "path": "data/fake/LA_D_1469415.wav",
+    "quadrant": "clean_fake"
+  },
+  {
+    "path": "data/fake/LA_D_5111401.wav",
+    "quadrant": "clean_fake"
+  },
+  {
+    "path": "data/fake/LA_D_5661632.wav",
+    "quadrant": "clean_fake"
+  },
+  {
+    "path": "data/fake/LA_D_7872579.wav",
+    "quadrant": "clean_fake"
+  },
+  {
+    "path": "data/fake/LA_D_7424653.wav",
+    "quadrant": "clean_fake"
+  },
+  {
+    "path": "data/fake/LA_D_3745110.wav",
+    "quadrant": "clean_fake"
+  },
+  {
+    "path": "data/fake/LA_D_9020983.wav",
+    "quadrant": "clean_fake"
+  },
+  {
+    "path": "data/fake/LA_D_9411191.wav",
+    "quadrant": "clean_fake"
+  },
+  {
+    "path": "data/fake/LA_D_7916377.wav",
+    "quadrant": "clean_fake"
+  },
+  {
+    "path": "data/fake/LA_D_8368027.wav",
+    "quadrant": "clean_fake"
+  },
+  {
+    "path": "data/fake/LA_D_5211419.wav",
+    "quadrant": "clean_fake"
+  },
+  {
+    "path": "data/fake/LA_D_1162280.wav",
+    "quadrant": "clean_fake"
+  },
+  {
+    "path": "data/fake/LA_D_6359607.wav",
+    "quadrant": "clean_fake"
+  },
+  {
+    "path": "data/fake/LA_D_9451445.wav",
+    "quadrant": "clean_fake"
+  },
+  {
+    "path": "data/fake/LA_D_7784595.wav",
+    "quadrant": "clean_fake"
+  },
+  {
+    "path": "data/fake/LA_D_6843783.wav",
+    "quadrant": "clean_fake"
+  },
+  {
+    "path": "data/fake/LA_D_9940119.wav",
+    "quadrant": "clean_fake"
+  },
+  {
+    "path": "data/fake/LA_D_8108552.wav",
+    "quadrant": "clean_fake"
+  },
+  {
+    "path": "data/fake/LA_D_9378704.wav",
+    "quadrant": "clean_fake"
+  },
+  {
+    "path": "data/fake/LA_D_9732597.wav",
+    "quadrant": "clean_fake"
+  },
+  {
+    "path": "data_realworld/real/librispeech_6241-66616-0000.wav",
+    "quadrant": "realworld_real"
+  },
+  {
+    "path": "data_realworld/real/librispeech_84-121550-0016.wav",
+    "quadrant": "realworld_real"
+  },
+  {
+    "path": "data_realworld/real/librispeech_5338-284437-0016.wav",
+    "quadrant": "realworld_real"
+  },
+  {
+    "path": "data_realworld/real/librispeech_5536-43359-0014.wav",
+    "quadrant": "realworld_real"
+  },
+  {
+    "path": "data_realworld/real/librispeech_6313-76958-0022.wav",
+    "quadrant": "realworld_real"
+  },
+  {
+    "path": "data_realworld/real/librispeech_3752-4944-0012.wav",
+    "quadrant": "realworld_real"
+  },
+  {
+    "path": "data_realworld/real/librispeech_3536-23268-0026.wav",
+    "quadrant": "realworld_real"
+  },
+  {
+    "path": "data_realworld/real/librispeech_5536-43358-0017.wav",
+    "quadrant": "realworld_real"
+  },
+  {
+    "path": "data_realworld/real/librispeech_1462-170142-0035.wav",
+    "quadrant": "realworld_real"
+  },
+  {
+    "path": "data_realworld/real/librispeech_8842-302201-0014.wav",
+    "quadrant": "realworld_real"
+  },
+  {
+    "path": "data_realworld/real/librispeech_7850-286674-0010.wav",
+    "quadrant": "realworld_real"
+  },
+  {
+    "path": "data_realworld/real/librispeech_6313-66129-0005.wav",
+    "quadrant": "realworld_real"
+  },
+  {
+    "path": "data_realworld/real/librispeech_2078-142845-0017.wav",
+    "quadrant": "realworld_real"
+  },
+  {
+    "path": "data_realworld/real/librispeech_777-126732-0028.wav",
+    "quadrant": "realworld_real"
+  },
+  {
+    "path": "data_realworld/real/librispeech_8297-275155-0013.wav",
+    "quadrant": "realworld_real"
+  },
+  {
+    "path": "data_realworld/real/librispeech_1919-142785-0030.wav",
+    "quadrant": "realworld_real"
+  },
+  {
+    "path": "data_realworld/real/librispeech_6313-66129-0026.wav",
+    "quadrant": "realworld_real"
+  },
+  {
+    "path": "data_realworld/real/librispeech_2412-153954-0012.wav",
+    "quadrant": "realworld_real"
+  },
+  {
+    "path": "data_realworld/real/librispeech_2035-152373-0017.wav",
+    "quadrant": "realworld_real"
+  },
+  {
+    "path": "data_realworld/real/librispeech_3000-15664-0023.wav",
+    "quadrant": "realworld_real"
+  },
+  {
+    "path": "data_realworld/fake/tts_gtts_0071.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_realworld/fake/tts_gtts_0141.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_realworld/fake/tts_gtts_0001.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_realworld/fake/tts_gtts_0045.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_realworld/fake/tts_gtts_0015.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_realworld/fake/tts_gtts_0107.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_realworld/fake/tts_gtts_0093.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_realworld/fake/tts_gtts_0008.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_realworld/fake/tts_gtts_0081.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_realworld/fake/tts_gtts_0042.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_realworld/fake/tts_gtts_0102.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_realworld/fake/tts_gtts_0079.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_realworld/fake/tts_gtts_0108.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_realworld/fake/tts_gtts_0005.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_realworld/fake/tts_gtts_0140.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_realworld/fake/tts_gtts_0122.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_realworld/fake/tts_gtts_0158.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_realworld/fake/tts_gtts_0109.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_realworld/fake/tts_gtts_0004.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_realworld/fake/tts_gtts_0058.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "test/ElevenLabs_Text_to_Speech_audio.mp3.mpeg",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0000.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0001.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0002.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0003.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0004.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0005.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0006.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0007.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0008.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0009.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0010.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0011.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0012.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0013.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0014.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0015.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0016.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0017.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0018.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0019.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0020.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0021.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0022.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0023.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0024.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0025.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0026.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0027.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0028.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0029.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0030.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0031.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0032.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0033.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0034.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0035.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0036.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0037.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0038.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0039.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0040.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0041.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0042.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0043.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0044.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0045.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0046.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0047.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0048.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0049.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0050.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0051.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0052.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0053.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0054.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0055.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0056.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0057.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0058.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/sapi/sapi_0059.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0000.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0001.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0002.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0003.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0004.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0005.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0006.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0007.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0008.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0009.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0010.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0011.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0012.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0013.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0014.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0015.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0016.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0017.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0018.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0019.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0020.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0021.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0022.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0023.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0024.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0025.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0026.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0027.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0028.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0029.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0030.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0031.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0032.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0033.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0034.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0035.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0036.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0037.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0038.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0039.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0040.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0041.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0042.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0043.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0044.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0045.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0046.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0047.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0048.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0049.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0050.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0051.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0052.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0053.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0054.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0055.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0056.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0057.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0058.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/piper/piper_0059.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0000.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0001.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0002.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0003.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0004.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0005.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0006.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0007.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0008.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0009.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0010.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0011.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0012.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0013.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0014.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0015.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0016.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0017.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0018.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0019.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0020.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0021.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0022.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0023.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0024.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0025.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0026.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0027.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0028.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0029.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0030.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0031.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0032.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0033.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0034.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0035.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0036.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0037.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0038.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0039.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0040.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0041.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0042.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0043.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0044.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0045.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0046.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0047.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0048.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0049.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0050.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0051.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0052.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0053.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0054.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0055.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0056.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0057.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0058.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/edgetts/edgetts_0059.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/elevenlabs/elevenlabs_audio559.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/elevenlabs/elevenlabs_audio27.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/elevenlabs/elevenlabs_audio554.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/elevenlabs/elevenlabs_audio125.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/elevenlabs/elevenlabs_audio487.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/elevenlabs/elevenlabs_audio21.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/elevenlabs/elevenlabs_audio78.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/elevenlabs/elevenlabs_audio558.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/elevenlabs/elevenlabs_audio128.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/elevenlabs/elevenlabs_audio38.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/elevenlabs/elevenlabs_audio401.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/elevenlabs/elevenlabs_audio166.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/elevenlabs/elevenlabs_audio362.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/elevenlabs/elevenlabs_audio349.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/elevenlabs/elevenlabs_audio82.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/elevenlabs/elevenlabs_audio149.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/elevenlabs/elevenlabs_audio155.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/elevenlabs/elevenlabs_audio25.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/elevenlabs/elevenlabs_audio408.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/elevenlabs/elevenlabs_audio64.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/elevenlabs/elevenlabs_audio100.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/elevenlabs/elevenlabs_audio110.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/elevenlabs/elevenlabs_audio568.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/elevenlabs/elevenlabs_audio37.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/elevenlabs/elevenlabs_audio30.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/elevenlabs/elevenlabs_audio410.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/elevenlabs/elevenlabs_audio381.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/elevenlabs/elevenlabs_audio372.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/elevenlabs/elevenlabs_audio492.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/elevenlabs/elevenlabs_audio141.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/respeecher/respeecher_audio247.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/respeecher/respeecher_audio184.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/respeecher/respeecher_audio170.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/respeecher/respeecher_audio506.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/respeecher/respeecher_audio178.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/respeecher/respeecher_audio240.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/respeecher/respeecher_audio319.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/respeecher/respeecher_audio595.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/respeecher/respeecher_audio273.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/respeecher/respeecher_audio581.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/respeecher/respeecher_audio427.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/respeecher/respeecher_audio515.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/respeecher/respeecher_audio216.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/respeecher/respeecher_audio593.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/respeecher/respeecher_audio269.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/respeecher/respeecher_audio329.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/respeecher/respeecher_audio203.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/respeecher/respeecher_audio223.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/respeecher/respeecher_audio188.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/respeecher/respeecher_audio176.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/respeecher/respeecher_audio195.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/respeecher/respeecher_audio598.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/respeecher/respeecher_audio172.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/respeecher/respeecher_audio305.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/respeecher/respeecher_audio224.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/respeecher/respeecher_audio196.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/respeecher/respeecher_audio517.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/respeecher/respeecher_audio587.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/respeecher/respeecher_audio450.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/respeecher/respeecher_audio511.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/knnvc/knnvc_0012.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/knnvc/knnvc_0010.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/knnvc/knnvc_0037.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/knnvc/knnvc_0004.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/knnvc/knnvc_0047.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/knnvc/knnvc_0022.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/knnvc/knnvc_0050.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/knnvc/knnvc_0023.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/knnvc/knnvc_0016.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/knnvc/knnvc_0035.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/knnvc/knnvc_0033.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_generators/knnvc/knnvc_0034.wav",
+    "quadrant": "realworld_fake"
+  },
+  {
+    "path": "data_indian/real/Speaker-45_Speaker-45_bonafide346.wav",
+    "quadrant": "indian_real"
+  },
+  {
+    "path": "data_indian/real/Speaker-30_Speaker-30_bonafide399.wav",
+    "quadrant": "indian_real"
+  },
+  {
+    "path": "data_indian/real/Speaker-37_Speaker-37_bonafide4.wav",
+    "quadrant": "indian_real"
+  },
+  {
+    "path": "data_indian/real/Speaker-31_Speaker-31_bonafide192.wav",
+    "quadrant": "indian_real"
+  },
+  {
+    "path": "data_indian/real/Speaker-30_Speaker-30_bonafide575.wav",
+    "quadrant": "indian_real"
+  },
+  {
+    "path": "data_indian/real/Speaker-8_Speaker-8_bonafide1.wav",
+    "quadrant": "indian_real"
+  },
+  {
+    "path": "data_indian/real/Speaker-28_Speaker-28_bonafide207.wav",
+    "quadrant": "indian_real"
+  },
+  {
+    "path": "data_indian/real/Speaker-28_Speaker-28_bonafide192.wav",
+    "quadrant": "indian_real"
+  },
+  {
+    "path": "data_indian/real/Speaker-40_Speaker-40_bonafide116.wav",
+    "quadrant": "indian_real"
+  },
+  {
+    "path": "data_indian/real/Speaker-30_Speaker-30_bonafide490.wav",
+    "quadrant": "indian_real"
+  },
+  {
+    "path": "data_indian/real/Unspecified_Audio_Samples_voice_790.wav",
+    "quadrant": "indian_real"
+  },
+  {
+    "path": "data_indian/real/Speaker-18_Speaker-18_bonafide4.wav",
+    "quadrant": "indian_real"
+  },
+  {
+    "path": "data_indian/real/Speaker-31_Speaker-31_bonafide1002.wav",
+    "quadrant": "indian_real"
+  },
+  {
+    "path": "data_indian/real/Speaker-31_Speaker-31_bonafide1112.wav",
+    "quadrant": "indian_real"
+  },
+  {
+    "path": "data_indian/real/Speaker-49_Speaker-49_bonafide43.wav",
+    "quadrant": "indian_real"
+  },
+  {
+    "path": "data_indian/real/Speaker-31_Speaker-31_bonafide1176.wav",
+    "quadrant": "indian_real"
+  },
+  {
+    "path": "data_indian/real/Speaker-15_Speaker-15_bonafide182.wav",
+    "quadrant": "indian_real"
+  },
+  {
+    "path": "data_indian/real/Unspecified_Audio_Samples_voice_272.wav",
+    "quadrant": "indian_real"
+  },
+  {
+    "path": "data_indian/real/Speaker-31_Speaker-31_bonafide626.wav",
+    "quadrant": "indian_real"
+  },
+  {
+    "path": "data_indian/real/Speaker-29_Speaker-29_bonafide724.wav",
+    "quadrant": "indian_real"
+  },
+  {
+    "path": "data_indian/real/Speaker-28_Speaker-28_bonafide233.wav",
+    "quadrant": "indian_real"
+  },
+  {
+    "path": "data_indian/real/Speaker-28_Speaker-28_bonafide71.wav",
+    "quadrant": "indian_real"
+  },
+  {
+    "path": "data_indian/real/Speaker-31_Speaker-31_bonafide38.wav",
+    "quadrant": "indian_real"
+  },
+  {
+    "path": "data_indian/real/Speaker-36_Speaker-36_bonafide17.wav",
+    "quadrant": "indian_real"
+  },
+  {
+    "path": "data_indian/real/Speaker-35_Speaker-35_bonafide110.wav",
+    "quadrant": "indian_real"
+  },
+  {
+    "path": "data_indian/real/Speaker-45_Speaker-45_bonafide283.wav",
+    "quadrant": "indian_real"
+  },
+  {
+    "path": "data_indian/real/Speaker-49_Speaker-49_bonafide80.wav",
+    "quadrant": "indian_real"
+  },
+  {
+    "path": "data_indian/real/Speaker-37_Speaker-37_bonafide24.wav",
+    "quadrant": "indian_real"
+  },
+  {
+    "path": "data_indian/real/Speaker-31_Speaker-31_bonafide591.wav",
+    "quadrant": "indian_real"
+  },
+  {
+    "path": "data_indian/real/Speaker-28_Speaker-28_bonafide164.wav",
+    "quadrant": "indian_real"
+  },
+  {
+    "path": "data_indian/fake/Speaker-19_Speaker-19_deepfake503.wav",
+    "quadrant": "indian_fake"
+  },
+  {
+    "path": "data_indian/fake/Speaker-13_Speaker-13_deepfake86.wav",
+    "quadrant": "indian_fake"
+  },
+  {
+    "path": "data_indian/fake/Speaker-33_Speaker-33_deepfake261.wav",
+    "quadrant": "indian_fake"
+  },
+  {
+    "path": "data_indian/fake/Speaker-48_Speaker-48_deepfake245.wav",
+    "quadrant": "indian_fake"
+  },
+  {
+    "path": "data_indian/fake/Speaker-22_Speaker-22_deepfake399.wav",
+    "quadrant": "indian_fake"
+  },
+  {
+    "path": "data_indian/fake/Speaker-12_Speaker-12_deepfake171.wav",
+    "quadrant": "indian_fake"
+  },
+  {
+    "path": "data_indian/fake/Speaker-48_Speaker-48_deepfake16.wav",
+    "quadrant": "indian_fake"
+  },
+  {
+    "path": "data_indian/fake/Speaker-24_Speaker-24_deepfake76.wav",
+    "quadrant": "indian_fake"
+  },
+  {
+    "path": "data_indian/fake/Speaker-49_Speaker-49_deepfake21.wav",
+    "quadrant": "indian_fake"
+  },
+  {
+    "path": "data_indian/fake/Speaker-23_Speaker-23_deepfake122.wav",
+    "quadrant": "indian_fake"
+  },
+  {
+    "path": "data_indian/fake/Speaker-10_Speaker-10_deepfake95.wav",
+    "quadrant": "indian_fake"
+  },
+  {
+    "path": "data_indian/fake/Speaker-23_Speaker-23_deepfake296.wav",
+    "quadrant": "indian_fake"
+  },
+  {
+    "path": "data_indian/fake/Speaker-28_Speaker-28_deepfake137.wav",
+    "quadrant": "indian_fake"
+  },
+  {
+    "path": "data_indian/fake/Speaker-50_Speaker-50_deepfake88.wav",
+    "quadrant": "indian_fake"
+  },
+  {
+    "path": "data_indian/fake/Speaker-19_Speaker-19_deepfake589.wav",
+    "quadrant": "indian_fake"
+  },
+  {
+    "path": "data_indian/fake/Speaker-20_Speaker-20_deepfake146.wav",
+    "quadrant": "indian_fake"
+  },
+  {
+    "path": "data_indian/fake/Speaker-19_Speaker-19_deepfake932.wav",
+    "quadrant": "indian_fake"
+  },
+  {
+    "path": "data_indian/fake/Speaker-19_Speaker-19_deepfake684.wav",
+    "quadrant": "indian_fake"
+  },
+  {
+    "path": "data_indian/fake/Speaker-37_Speaker-37_deepfake60.wav",
+    "quadrant": "indian_fake"
+  },
+  {
+    "path": "data_indian/fake/Speaker-28_Speaker-28_deepfake231.wav",
+    "quadrant": "indian_fake"
+  },
+  {
+    "path": "data_indian/fake/Speaker-40_Speaker-40_deepfake61.wav",
+    "quadrant": "indian_fake"
+  },
+  {
+    "path": "data_indian/fake/Speaker-24_Speaker-24_deepfake75.wav",
+    "quadrant": "indian_fake"
+  },
+  {
+    "path": "data_indian/fake/Speaker-47_Speaker-47_deepfake12.wav",
+    "quadrant": "indian_fake"
+  },
+  {
+    "path": "data_indian/fake/Speaker-29_Speaker-29_deepfake188.wav",
+    "quadrant": "indian_fake"
+  },
+  {
+    "path": "data_indian/fake/Speaker-31_Speaker-31_deepfake200.wav",
+    "quadrant": "indian_fake"
+  },
+  {
+    "path": "data_indian/fake/Speaker-22_Speaker-22_deepfake244.wav",
+    "quadrant": "indian_fake"
+  },
+  {
+    "path": "data_indian/fake/Speaker-33_Speaker-33_deepfake272.wav",
+    "quadrant": "indian_fake"
+  },
+  {
+    "path": "data_indian/fake/Speaker-19_Speaker-19_deepfake734.wav",
+    "quadrant": "indian_fake"
+  },
+  {
+    "path": "data_indian/fake/Speaker-26_Speaker-26_deepfake21.wav",
+    "quadrant": "indian_fake"
+  },
+  {
+    "path": "data_indian/fake/Speaker-19_Speaker-19_deepfake245.wav",
+    "quadrant": "indian_fake"
+  }
+]

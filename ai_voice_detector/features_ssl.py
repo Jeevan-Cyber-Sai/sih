@@ -23,6 +23,12 @@ from transformers import Wav2Vec2Config, Wav2Vec2FeatureExtractor, Wav2Vec2Model
 # middle-of-that-range default.
 SSL_LAYER = 6
 
+# Auto-detects a GPU (e.g. on Colab) and uses it; falls back to CPU
+# unchanged everywhere else. Without this, model(**inputs) below would
+# silently run on CPU even with a GPU allocated -- torch tensors/modules
+# stay on CPU unless explicitly moved.
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 _MODEL_CACHE = {}
 
 
@@ -36,6 +42,7 @@ def load_ssl_model(model_name="facebook/wav2vec2-xls-r-300m"):
     feature_extractor = Wav2Vec2FeatureExtractor.from_pretrained(model_name)
     model = Wav2Vec2Model.from_pretrained(model_name)
     model.eval()
+    model.to(DEVICE)
 
     _MODEL_CACHE[model_name] = (feature_extractor, model)
     return feature_extractor, model
@@ -47,6 +54,7 @@ def extract_ssl_features(audio, sr=16000, model_name="facebook/wav2vec2-xls-r-30
     feature_extractor, model = load_ssl_model(model_name)
 
     inputs = feature_extractor(audio, sampling_rate=sr, return_tensors="pt")
+    inputs = {k: v.to(DEVICE) for k, v in inputs.items()}
 
     with torch.no_grad():
         outputs = model(**inputs, output_hidden_states=True)
@@ -55,7 +63,7 @@ def extract_ssl_features(audio, sr=16000, model_name="facebook/wav2vec2-xls-r-30
     mean_pooled = hidden.mean(dim=0)
     std_pooled = hidden.std(dim=0)
 
-    vec = torch.cat([mean_pooled, std_pooled]).numpy()
+    vec = torch.cat([mean_pooled, std_pooled]).cpu().numpy()
     return vec.astype(np.float32)
 
 
@@ -88,8 +96,12 @@ def load_ssl_model_truncated(model_name="facebook/wav2vec2-xls-r-300m", layer=SS
     truncated.eval()
 
     if quantize:
+        # dynamic int8 quantization has no CUDA kernels -- this path
+        # always runs on CPU regardless of DEVICE.
         truncated = torch.quantization.quantize_dynamic(truncated, {torch.nn.Linear}, dtype=torch.qint8)
         truncated.eval()
+    else:
+        truncated.to(DEVICE)
 
     _TRUNCATED_CACHE[cache_key] = (feature_extractor, truncated)
     return feature_extractor, truncated
@@ -119,8 +131,12 @@ def load_ssl_model_truncated_direct(model_name="facebook/wav2vec2-xls-r-300m", l
         model.encoder.layer_norm = torch.nn.Identity()
 
     if quantize:
+        # dynamic int8 quantization has no CUDA kernels -- this path
+        # always runs on CPU regardless of DEVICE.
         model = torch.quantization.quantize_dynamic(model, {torch.nn.Linear}, dtype=torch.qint8)
         model.eval()
+    else:
+        model.to(DEVICE)
 
     _TRUNCATED_DIRECT_CACHE[cache_key] = (feature_extractor, model)
     return feature_extractor, model
@@ -129,23 +145,27 @@ def load_ssl_model_truncated_direct(model_name="facebook/wav2vec2-xls-r-300m", l
 def extract_ssl_features_truncated_direct(audio, sr=16000, model_name="facebook/wav2vec2-xls-r-300m",
                                            layer=SSL_LAYER, quantize=False):
     feature_extractor, model = load_ssl_model_truncated_direct(model_name, layer, quantize)
+    device = torch.device("cpu") if quantize else DEVICE
 
     inputs = feature_extractor(audio, sampling_rate=sr, return_tensors="pt")
+    inputs = {k: v.to(device) for k, v in inputs.items()}
     with torch.no_grad():
         outputs = model(**inputs, output_hidden_states=True)
 
     hidden = outputs.hidden_states[layer][0]
     mean_pooled = hidden.mean(dim=0)
     std_pooled = hidden.std(dim=0)
-    vec = torch.cat([mean_pooled, std_pooled]).numpy()
+    vec = torch.cat([mean_pooled, std_pooled]).cpu().numpy()
     return vec.astype(np.float32)
 
 
 def extract_ssl_features_truncated(audio, sr=16000, model_name="facebook/wav2vec2-xls-r-300m",
                                     layer=SSL_LAYER, quantize=False):
     feature_extractor, model = load_ssl_model_truncated(model_name, layer, quantize)
+    device = torch.device("cpu") if quantize else DEVICE
 
     inputs = feature_extractor(audio, sampling_rate=sr, return_tensors="pt")
+    inputs = {k: v.to(device) for k, v in inputs.items()}
 
     with torch.no_grad():
         outputs = model(**inputs, output_hidden_states=True)
@@ -154,7 +174,7 @@ def extract_ssl_features_truncated(audio, sr=16000, model_name="facebook/wav2vec
     mean_pooled = hidden.mean(dim=0)
     std_pooled = hidden.std(dim=0)
 
-    vec = torch.cat([mean_pooled, std_pooled]).numpy()
+    vec = torch.cat([mean_pooled, std_pooled]).cpu().numpy()
     return vec.astype(np.float32)
 
 

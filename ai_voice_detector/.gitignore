@@ -8,7 +8,9 @@ data/real/*
 data/fake/*
 !data/fake/.gitkeep
 
-data_realworld/
+data_realworld/*
+!data_realworld/holdout_manifest.json
+!data_realworld/generator_manifest.json
 scripts/_dev-clean.tar.gz
 .ffmpeg_bin/
 
@@ -16,3 +18,13 @@ models/*.joblib
 
 *.zip
 data_generators/_elevenlabs_respeecher_extract/
+
+# IndieFake Indian-accent dataset: raw drive-download zips, organized
+# audio, and its degraded-augmentation copy are all large binary data --
+# reproducible from the zips (kept in the user's Drive), not versioned.
+# The eval manifests above (which files are held out / which generator
+# they belong to) ARE versioned since those encode real methodology.
+IndieFake  Dataset/
+data_indian/
+data_indian_augmented/
+features_indian.npy

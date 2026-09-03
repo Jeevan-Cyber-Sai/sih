@@ -71,7 +71,15 @@ MAX_PROJECTED_MINUTES = 90
 
 
 def _embed_cache_path(path, model_name):
-    key = f"{model_name}::{os.path.abspath(path)}"
+    """Cache key is the path RELATIVE to the project root, not the
+    absolute path -- an absolute path (C:\\Users\\...\\ vs /content/...)
+    is machine-specific, which would silently invalidate every cached
+    embedding (including the ones already committed to git) the moment
+    this project runs on a different machine or in Colab. Relative-path
+    keys make the cache portable across machines that share the same
+    project structure."""
+    rel = os.path.relpath(os.path.abspath(path), ROOT).replace(os.sep, "/")
+    key = f"{model_name}::{rel}"
     h = hashlib.sha1(key.encode()).hexdigest()
     return os.path.join(EMBED_CACHE_DIR, h + ".npy")
 
@@ -186,6 +194,11 @@ def main():
     parser.add_argument("--augmented", action="store_true",
                          help="train v2 on data/ + data_realworld/ (balanced real+fake) instead of "
                               "data/ alone; saves as voice_classifier_ssl_v2.joblib / scaler_ssl_v2.joblib")
+    parser.add_argument("--indian", action="store_true",
+                         help="train on data/ + data_realworld/ (same as --augmented) PLUS the "
+                              "IndieFake Indian-accent dataset (features_indian.npy, built by "
+                              "scripts/extract_indian_ssl_features.py); saves as "
+                              "voice_classifier_ssl_indian.joblib / scaler_ssl_indian.joblib")
     parser.add_argument("--model-name", default=None,
                          help="skip the auto speed benchmark and force a specific HF model name")
     args = parser.parse_args()
@@ -193,7 +206,11 @@ def main():
     os.makedirs(CACHE_DIR, exist_ok=True)
     os.makedirs(MODELS_DIR, exist_ok=True)
 
-    if args.augmented:
+    if args.indian:
+        sources = [(REAL_DIR, 0), (REALWORLD_REAL_DIR, 0), (FAKE_DIR, 1), (REALWORLD_FAKE_DIR, 1)]
+        sources += [(d, 1) for d in GENERATOR_FAKE_DIRS]
+        model_out, scaler_out = "voice_classifier_ssl_indian.joblib", "scaler_ssl_indian.joblib"
+    elif args.augmented:
         sources = [(REAL_DIR, 0), (REALWORLD_REAL_DIR, 0), (FAKE_DIR, 1), (REALWORLD_FAKE_DIR, 1)]
         sources += [(d, 1) for d in GENERATOR_FAKE_DIRS]
         model_out, scaler_out = "voice_classifier_ssl_v2.joblib", "scaler_ssl_v2.joblib"
@@ -212,6 +229,12 @@ def main():
     if args.model_name:
         model_name = args.model_name
         print(f"using forced model: {model_name}")
+    elif args.indian:
+        # the Indian features were already extracted with XLS-R-300M
+        # (truncated) -- stay on the same model for the rest of the
+        # combined dataset instead of re-benchmarking a different one.
+        model_name = XLSR_MODEL
+        print(f"using {model_name} (matches features_indian.npy)")
     else:
         random.seed(0)
         sample_paths = random.sample(all_files, min(6, n_files))
@@ -223,6 +246,19 @@ def main():
     X, y = build_dataset_ssl(sources, model_name)
     extraction_time = time.time() - t0
     print(f"extraction done in {extraction_time:.1f}s")
+
+    if args.indian:
+        indian_path = os.path.join(ROOT, "features_indian.npy")
+        if not os.path.exists(indian_path):
+            raise FileNotFoundError(
+                f"{indian_path} not found -- run scripts/extract_indian_ssl_features.py first."
+            )
+        indian = np.load(indian_path, allow_pickle=True).item()
+        X_indian, y_indian = indian["X"], indian["y"]
+        print(f"loaded Indian features: X.shape={X_indian.shape}  "
+              f"(real={int((y_indian==0).sum())}, fake={int((y_indian==1).sum())})")
+        X = np.concatenate([X, X_indian], axis=0)
+        y = np.concatenate([y, y_indian], axis=0)
 
     print(f"\nX.shape={X.shape}  y.shape={y.shape}  embedding_dim={X.shape[1]}")
 
