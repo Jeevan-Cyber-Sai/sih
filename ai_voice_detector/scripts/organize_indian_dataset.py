@@ -24,24 +24,32 @@ SRC_DIR = os.environ.get("INDIEFAKE_ZIP_DIR", os.path.join(ROOT, "IndieFake  Dat
 DEST_REAL = os.path.join(ROOT, "data_indian", "real")
 DEST_FAKE = os.path.join(ROOT, "data_indian", "fake")
 
-ZIP_PARTS = [
-    "drive-download-20260903T071406Z-1-001.zip",
-    "drive-download-20260903T071406Z-1-002.zip",
-    "drive-download-20260903T071406Z-1-003.zip",
-    "drive-download-20260903T071406Z-1-004.zip",
-]
-
 LABEL_DIRS = {"Bonafides": DEST_REAL, "Deepfakes": DEST_FAKE}
 
 
 def main():
+    if not os.path.isdir(SRC_DIR):
+        raise FileNotFoundError(
+            f"INDIEFAKE_ZIP_DIR does not exist: {SRC_DIR!r}. "
+            f"Set it to the exact folder containing the IndieFake zip part(s)."
+        )
+
+    # Auto-discover zip parts by extension rather than hardcoding exact
+    # filenames -- a fresh Drive upload/export can end up with different
+    # names (different export timestamp, renamed by the user, etc.) even
+    # though the actual dataset contents are the same.
+    zip_names = sorted(f for f in os.listdir(SRC_DIR) if f.lower().endswith(".zip"))
+    if not zip_names:
+        raise FileNotFoundError(f"no .zip files found in {SRC_DIR!r}")
+    print(f"found {len(zip_names)} zip part(s) in {SRC_DIR}: {zip_names}")
+
     os.makedirs(DEST_REAL, exist_ok=True)
     os.makedirs(DEST_FAKE, exist_ok=True)
 
     n_real = n_fake = n_skipped = n_overwritten = 0
     seen = set()
 
-    for zip_name in ZIP_PARTS:
+    for zip_name in zip_names:
         zip_path = os.path.join(SRC_DIR, zip_name)
         print(f"extracting {zip_name} ...", flush=True)
         with zipfile.ZipFile(zip_path) as zf:
