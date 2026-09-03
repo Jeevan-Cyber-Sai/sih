@@ -35,6 +35,7 @@ Output: features_indian.npy in the project root -- a pickled dict
 non-excluded Indian file (clean + degraded), for step 5 to load directly
 instead of re-walking the directories.
 """
+import multiprocessing
 import os
 import sys
 import time
@@ -133,7 +134,14 @@ def main():
     n_skipped = n_cache_hits = 0
     t0 = time.time()
 
-    with ProcessPoolExecutor(max_workers=MAX_WORKERS) as ex:
+    # Linux (Colab included) defaults ProcessPoolExecutor to 'fork', which
+    # crashes the moment a worker touches CUDA ("Cannot re-initialize CUDA
+    # in forked subprocess") -- a forked child inherits the parent's
+    # memory space, and CUDA contexts don't survive that. Windows defaults
+    # to 'spawn' already (why this never showed up testing locally), but
+    # forcing 'spawn' explicitly makes this correct on every platform.
+    mp_context = multiprocessing.get_context("spawn")
+    with ProcessPoolExecutor(max_workers=MAX_WORKERS, mp_context=mp_context) as ex:
         futures = [ex.submit(_process_one, t) for t in tasks]
         for i, fut in enumerate(as_completed(futures), 1):
             path, label, vec, was_cached, err = fut.result()
