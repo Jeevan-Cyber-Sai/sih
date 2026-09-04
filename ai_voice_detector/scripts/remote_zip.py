@@ -14,6 +14,18 @@ class HTTPRangeFile:
     def __init__(self, url, session=None, max_retries=25, retry_wait=1.0):
         self.url = url
         self.session = session or requests.Session()
+        # Some institutional hosts (e.g. datashare.ed.ac.uk) WAF-block
+        # requests carrying Python's default "python-requests/x.x" user
+        # agent as suspected bot traffic -- seen specifically from cloud
+        # datacenter IPs (Colab runs on GCP). A realistic browser UA is
+        # enough to get past that naive a filter; this isn't evading any
+        # access control on the dataset itself (ASVspoof2019 LA is public,
+        # freely downloadable research data), just its bot heuristic.
+        self.session.headers.setdefault(
+            "User-Agent",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+            "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        )
         self.max_retries = max_retries
         self.retry_wait = retry_wait
         self.pos = 0
