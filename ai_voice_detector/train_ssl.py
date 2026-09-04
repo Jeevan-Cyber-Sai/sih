@@ -169,7 +169,9 @@ def evaluate_classifier(name, clf_factory, X, y):
     skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
     metrics = {"accuracy": [], "precision": [], "recall": [], "f1": []}
 
-    for train_idx, test_idx in skf.split(X, y):
+    print(f"\n{name}: starting 5-fold CV...", flush=True)
+    t0 = time.time()
+    for fold, (train_idx, test_idx) in enumerate(skf.split(X, y), 1):
         X_train, X_test = X[train_idx], X[test_idx]
         y_train, y_test = y[train_idx], y[test_idx]
 
@@ -181,6 +183,12 @@ def evaluate_classifier(name, clf_factory, X, y):
         metrics["precision"].append(precision_score(y_test, preds))
         metrics["recall"].append(recall_score(y_test, preds))
         metrics["f1"].append(f1_score(y_test, preds))
+        # Without this, a slow classifier (RandomForest/MLP on large,
+        # high-dimensional data) leaves total silence for the entire CV
+        # run -- indistinguishable from a hang. One line per fold fixes
+        # that at negligible cost.
+        print(f"  {name} fold {fold}/5 done ({time.time() - t0:.0f}s elapsed): "
+              f"acc={metrics['accuracy'][-1]:.4f} f1={metrics['f1'][-1]:.4f}", flush=True)
 
     summary = {k: (float(np.mean(v)), float(np.std(v))) for k, v in metrics.items()}
     print(f"\n=== {name}: 5-fold stratified CV (mean +/- std) ===")
@@ -266,11 +274,17 @@ def main():
     X_scaled = scaler.fit_transform(X)
 
     candidates = {
-        # n_jobs=-1: RandomForest was running single-threaded by default
-        # even on machines/Colab instances with many idle cores -- a real
-        # bottleneck once the dataset grew to 41k+ rows (Indian dataset).
-        "RandomForest": lambda: RandomForestClassifier(n_estimators=200, random_state=42,
-                                                        class_weight="balanced", n_jobs=-1),
+        # n_jobs=-1: use every available core instead of running single-
+        # threaded. max_depth=20: this alone wasn't enough on 41k rows x
+        # 2048-dim SSL embeddings -- unbounded trees on data this wide
+        # can grow very deep before hitting pure leaves, and tree-
+        # building cost scales with depth, not just estimator count.
+        # Bounding depth is the actual fix for the wall-clock stall;
+        # 20 is generous enough that it rarely constrains accuracy on
+        # embeddings this size, while capping worst-case tree size.
+        "RandomForest": lambda: RandomForestClassifier(n_estimators=150, random_state=42,
+                                                        class_weight="balanced", n_jobs=-1,
+                                                        max_depth=20),
         # early_stopping=True: stops once validation score plateaus
         # instead of always running the full max_iter -- cuts wall-clock
         # time substantially at this scale with no accuracy cost (it's
