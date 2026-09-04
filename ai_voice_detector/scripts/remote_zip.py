@@ -31,6 +31,13 @@ class HTTPRangeFile:
                     return int(cr.split("/")[-1])
                 if "Content-Length" in r.headers and r.status_code == 200:
                     return int(r.headers["Content-Length"])
+                # Got a response, but not one we can read a length from --
+                # capture WHY instead of silently retrying and eventually
+                # raising "None" with no diagnostic info at all.
+                last_exc = RuntimeError(
+                    f"status={r.status_code} headers={dict(r.headers)} "
+                    f"body[:200]={r.text[:200]!r}"
+                )
             except Exception as e:
                 last_exc = e
             time.sleep(self.retry_wait)
