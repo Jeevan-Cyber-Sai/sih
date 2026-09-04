@@ -266,8 +266,17 @@ def main():
     X_scaled = scaler.fit_transform(X)
 
     candidates = {
-        "RandomForest": lambda: RandomForestClassifier(n_estimators=200, random_state=42, class_weight="balanced"),
-        "MLP (128,64)": lambda: MLPClassifier(hidden_layer_sizes=(128, 64), max_iter=500, random_state=42),
+        # n_jobs=-1: RandomForest was running single-threaded by default
+        # even on machines/Colab instances with many idle cores -- a real
+        # bottleneck once the dataset grew to 41k+ rows (Indian dataset).
+        "RandomForest": lambda: RandomForestClassifier(n_estimators=200, random_state=42,
+                                                        class_weight="balanced", n_jobs=-1),
+        # early_stopping=True: stops once validation score plateaus
+        # instead of always running the full max_iter -- cuts wall-clock
+        # time substantially at this scale with no accuracy cost (it's
+        # monitoring held-out validation score, not just epoch count).
+        "MLP (128,64)": lambda: MLPClassifier(hidden_layer_sizes=(128, 64), max_iter=500,
+                                               random_state=42, early_stopping=True),
         "LogisticRegression": lambda: LogisticRegression(max_iter=2000, random_state=42, class_weight="balanced"),
     }
     summaries = {name: evaluate_classifier(name, factory, X_scaled, y)
