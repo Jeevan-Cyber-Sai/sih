@@ -23,10 +23,12 @@ import io
 import json
 import os
 
+import librosa
 import soundfile as sf
 from huggingface_hub import hf_hub_download
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+TARGET_SR = 16000
 
 LANG_CONFIG = {
     "hindi": {"repo": "SPRINGLab/IndicTTS-Hindi", "n_shards": 10},
@@ -67,6 +69,16 @@ def main():
             try:
                 audio_bytes = row["audio"]["bytes"]
                 y, sr = sf.read(io.BytesIO(audio_bytes))
+                if y.ndim > 1:
+                    y = y.mean(axis=1)
+                if sr != TARGET_SR:
+                    # IndicTTS ships native 48kHz; edge-tts fakes come out
+                    # at 16kHz (build_multilingual_fake.py). Leaving real
+                    # at 48kHz would let a classifier trivially separate
+                    # classes by sample rate alone instead of learning
+                    # anything about voice authenticity.
+                    y = librosa.resample(y, orig_sr=sr, target_sr=TARGET_SR)
+                    sr = TARGET_SR
                 out_name = f"indictts_{args.language}_{n_ok:04d}.wav"
                 out_path = os.path.join(dest_dir, out_name)
                 sf.write(out_path, y, sr)
