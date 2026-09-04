@@ -1,5 +1,6 @@
 # Named risk profiles: each defines its own LOW/MEDIUM/HIGH thresholds and
-# how much weight voice-risk vs contextual-risk carries in the final score.
+# how much weight voice-risk, contextual-risk, and cross-session speaker
+# consistency each carry in the final score (the three always sum to 1.0).
 # A "routine" call and a call authorizing a large transfer should NOT be
 # held to the same bar -- this is how that's expressed without touching code.
 default_profile: routine
@@ -8,25 +9,32 @@ profiles:
   routine:
     low_threshold: 30
     high_threshold: 70
-    voice_weight: 0.8
-    context_weight: 0.2
+    # original 0.8/0.2 voice/context split, scaled down proportionally
+    # to make room for consistency_weight while keeping their ratio.
+    voice_weight: 0.64
+    context_weight: 0.16
+    consistency_weight: 0.2
 
   high_value_transaction:
     # more conservative: escalates to MEDIUM/HIGH sooner, and leans more
     # on context (large amount, new beneficiary, etc.) since the cost of
-    # a false negative here is money actually leaving the account.
+    # a false negative here is money actually leaving the account. Also
+    # leans more on speaker consistency than routine -- a mismatched
+    # profile matters more when real money is about to move.
     low_threshold: 20
     high_threshold: 55
-    voice_weight: 0.6
-    context_weight: 0.4
+    voice_weight: 0.42
+    context_weight: 0.28
+    consistency_weight: 0.3
 
   privileged_access:
     # e.g. resetting credentials, granting access -- similarly
     # conservative to high_value_transaction.
     low_threshold: 20
     high_threshold: 50
-    voice_weight: 0.6
-    context_weight: 0.4
+    voice_weight: 0.42
+    context_weight: 0.28
+    consistency_weight: 0.3
 
 # Additive contextual risk scoring. Each flag contributes points if
 # present/true; total is capped at 100. These are all *escalating* signals
@@ -49,3 +57,28 @@ privacy:
   #                    context flags) to logs/risk_events.jsonl; still never
   #                    audio, transcripts, or file paths to audio
   retention_mode: none
+
+# Multi-channel alerting: email notifications to frontline staff when
+# impersonation risk crosses a configured threshold (see alerting.py).
+# sender_email/sender_password are placeholders ONLY -- the real values
+# are always read from the ALERT_SENDER_EMAIL / ALERT_SENDER_PASSWORD
+# environment variables, never from this file, so credentials never end
+# up committed to version control.
+alerting:
+  email_enabled: true
+  smtp_host: smtp.gmail.com
+  smtp_port: 587
+  sender_email: ""       # unused -- set ALERT_SENDER_EMAIL instead
+  sender_password: ""    # unused -- set ALERT_SENDER_PASSWORD instead
+  alert_recipients: ["jeevansaigdg@gmail.com"]
+  alert_on: ["HIGH"]
+
+  # SMS channel (Fast2SMS's Quick SMS route -- no DLT template registration
+  # needed, suitable for demo use). sms_api_key is a placeholder ONLY, same
+  # rule as the email credentials above -- the real key always comes from
+  # the FAST2SMS_API_KEY environment variable.
+  sms_enabled: false       # flip to true once Fast2SMS's one-time 100 INR top-up is done
+  sms_provider: fast2sms   # or msg91
+  sms_api_key: ""          # unused -- set FAST2SMS_API_KEY instead
+  sms_recipients: ["9445426847"]
+  sms_alert_on: ["HIGH"]

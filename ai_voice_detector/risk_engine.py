@@ -13,6 +13,8 @@ import os
 
 import yaml
 
+from alerting import send_email_alert_async, send_sms_alert_async
+
 ROOT = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(ROOT, "config.yaml")
 
@@ -86,33 +88,59 @@ def compute_context_risk(context=None):
     return min(score, weights.get("cap", 100))
 
 
-def compute_final_risk(voice_risk, context=None, profile_name=None):
-    """Combines voice_risk (0-100, from the audio model) with context_risk
-    (0-100, from call/transaction metadata) into a single final_risk,
-    weighted per the active profile.
+def compute_final_risk(voice_risk, context=None, profile_name=None, consistency_risk=None,
+                        speaker_id=None, call_id=None):
+    """Combines voice_risk (0-100, from the audio model), context_risk
+    (0-100, from call/transaction metadata), and consistency_risk (0-100,
+    from speaker_consistency.verify_speaker() -- "is this the same
+    specific person who called before", independent of "is this a human
+    or AI voice") into a single final_risk, weighted per the active
+    profile.
 
-    SECURITY-CRITICAL ASYMMETRY, deliberate and non-negotiable: context can
-    only push risk UP, never down. If voice_risk alone already clears the
-    active profile's HIGH threshold, final_risk is floored at that
-    threshold no matter how favourable the context looks -- a known caller
-    number, a familiar beneficiary, business hours, none of it can pull a
-    voice-level HIGH back down. This matters because a known/trusted
-    number is *exactly* what a real attacker spoofs; treating "looks
-    familiar" as exculpatory would hand attackers the easiest possible
-    bypass. Context is corroborating evidence for escalating risk, never
-    grounds for dismissing a voice-level HIGH finding. Without this floor,
-    the weighted blend (voice_risk * voice_weight, with voice_weight < 1)
-    could mathematically dilute a HIGH voice score below the HIGH
-    threshold purely because context_risk was low -- this floor exists
-    specifically to prevent that.
+    consistency_risk is None when no speaker_id was enrolled/provided for
+    this call. An unknown caller is a missing data point, not a signal --
+    treating None as 0 would silently read as "confirmed same person"
+    (the BEST possible consistency score) and artificially deflate
+    final_risk for every caller who simply hasn't been enrolled yet. So
+    when it's None, that weight is excluded and voice/context are
+    renormalized over just themselves, preserving their relative
+    emphasis instead of leaving a chunk of the total weight unused.
+
+    SECURITY-CRITICAL ASYMMETRY, deliberate and non-negotiable: context
+    and consistency can only push risk UP, never down. If voice_risk
+    alone already clears the active profile's HIGH threshold, final_risk
+    is floored at that threshold no matter how favourable context or
+    consistency look -- a known caller number, a familiar beneficiary,
+    business hours, or even a voice that matches the enrolled profile,
+    none of it can pull a voice-level HIGH back down. This matters
+    because a known/trusted number, and a voice matching a stored
+    profile, are *exactly* what a real attacker's clone is built to
+    produce -- a synthetic clone that successfully matches the victim's
+    own stored voiceprint is the worst-case attack, not a reassuring
+    result. Context and consistency are corroborating evidence for
+    escalating risk, never grounds for dismissing a voice-level HIGH
+    finding. Without this floor, the weighted blend (voice_risk *
+    voice_weight, with voice_weight < 1) could mathematically dilute a
+    HIGH voice score below the HIGH threshold purely because the other
+    signals were low -- this floor exists specifically to prevent that.
     """
     profile_name, profile = get_profile(profile_name)
     voice_weight = profile["voice_weight"]
     context_weight = profile["context_weight"]
+    consistency_weight = profile.get("consistency_weight", 0.0)
     high_threshold = profile["high_threshold"]
 
     context_risk = compute_context_risk(context)
-    weighted = voice_risk * voice_weight + context_risk * context_weight
+
+    if consistency_risk is None:
+        total_weight = voice_weight + context_weight
+        weighted = (voice_risk * voice_weight + context_risk * context_weight) / total_weight
+    else:
+        weighted = (
+            voice_risk * voice_weight
+            + context_risk * context_weight
+            + consistency_risk * consistency_weight
+        )
 
     if voice_risk >= high_threshold:
         final_risk = max(weighted, high_threshold)  # <-- the security floor
@@ -122,7 +150,7 @@ def compute_final_risk(voice_risk, context=None, profile_name=None):
     final_risk = min(final_risk, 100.0)
     level, action = risk_level_for_profile(final_risk, profile_name)
 
-    return {
+    result = {
         "profile": profile_name,
         "voice_risk": round(float(voice_risk), 2),
         "context_risk": round(float(context_risk), 2),
@@ -130,3 +158,19 @@ def compute_final_risk(voice_risk, context=None, profile_name=None):
         "risk_level": level,
         "recommended_action": action,
     }
+    if consistency_risk is not None:
+        result["consistency_risk"] = round(float(consistency_risk), 2)
+
+    # Async so a slow/broken SMTP or SMS API call can never add latency
+    # to scoring; alerting.py itself gates each channel independently on
+    # its own enabled/alert_on/rate-limit config, so both calls are cheap
+    # and safe to make unconditionally -- one channel failing or being
+    # disabled never affects the other.
+    send_email_alert_async(
+        level, result["voice_risk"], result["final_risk"], context_flags=context,
+        speaker_id=speaker_id, recommended_action=action, profile=profile_name,
+        consistency_risk=result.get("consistency_risk"), call_id=call_id,
+    )
+    send_sms_alert_async(level, result["final_risk"], recommended_action=action, call_id=call_id)
+
+    return result

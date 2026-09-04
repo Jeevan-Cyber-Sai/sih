@@ -14,6 +14,22 @@
     </header>
 
     <section class="card">
+      <h2>Alerting</h2>
+      <p class="action-text">
+        Email alerts to frontline staff: <span id="alertStatusText">checking...</span>
+      </p>
+      <p class="action-text">
+        SMS alerts to frontline staff: <span id="smsStatusText">checking...</span>
+      </p>
+      <div class="button-row">
+        <button id="testAlertBtn" class="btn btn-secondary">Send Test Alert (Email)</button>
+        <button id="testSmsBtn" class="btn btn-secondary">Send Test Alert (SMS)</button>
+      </div>
+      <p id="testAlertStatus" class="action-text"></p>
+      <p id="testSmsStatus" class="action-text"></p>
+    </section>
+
+    <section class="card">
       <h2>Upload audio</h2>
       <input type="file" id="audioFile" accept=".wav,.flac,.mp3,.ogg">
       <div class="button-row">
@@ -30,6 +46,37 @@
           <span id="singleLevel" class="badge">--</span>
           <p id="singleAction" class="action-text"></p>
         </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Speaker Enrollment</h2>
+      <p class="action-text">Cross-session speaker consistency: separate from spoof detection --
+        answers "is this the same specific person who called before". Enroll a known caller's
+        voice here, then supply their Speaker ID in the Transaction Approval demo below to check
+        a new clip against their stored profile.</p>
+
+      <label class="field-label" for="enrollSpeakerId">Speaker ID (name or phone number)</label>
+      <input type="text" id="enrollSpeakerId" class="field-input" placeholder="e.g. jsmith or +15551234567">
+
+      <label class="field-label" for="enrollAudioFile" style="margin-top: 10px; display: block;">Audio sample</label>
+      <input type="file" id="enrollAudioFile" accept=".wav,.flac,.mp3,.ogg">
+
+      <div class="button-row">
+        <button id="enrollBtn" class="btn btn-primary">Enroll Speaker</button>
+      </div>
+      <p id="enrollStatus" class="action-text"></p>
+
+      <h3>Known Speakers</h3>
+      <div id="knownSpeakersList" class="chunk-log"></div>
+    </section>
+
+    <section class="card">
+      <h2>Live Phone Call</h2>
+      <p class="action-text">Monitors an active Twilio call in real time via the same rolling-score
+        gauge below. Requires the Twilio webhook + ngrok setup in README.md.</p>
+      <div class="button-row">
+        <button id="liveCallBtn" class="btn btn-secondary">Start Monitoring</button>
       </div>
     </section>
 
@@ -90,6 +137,9 @@
         <input type="text" id="txBeneficiary" class="field-input" value="J. Smith">
       </div>
 
+      <label class="field-label" for="txSpeakerId">Speaker ID (optional -- checks against an enrolled profile)</label>
+      <input type="text" id="txSpeakerId" class="field-input" placeholder="leave blank to skip consistency check">
+
       <div class="button-row">
         <button id="approveBtn" class="btn btn-primary">Approve Transaction</button>
       </div>
@@ -115,6 +165,17 @@
           <div class="dual-score-tile">
             <span class="field-label">Combined voice risk</span>
             <div class="dual-score-value" id="combinedVoiceValue">--</div>
+          </div>
+        </div>
+
+        <div id="consistencyResult" class="dual-score-grid hidden" style="margin-top: 8px;">
+          <div class="dual-score-tile">
+            <span class="field-label">Speaker similarity</span>
+            <div class="dual-score-value" id="speakerSimilarityValue">--</div>
+          </div>
+          <div class="dual-score-tile">
+            <span class="field-label">Consistency match</span>
+            <div class="dual-score-value" id="speakerMatchValue">--</div>
           </div>
         </div>
       </div>
@@ -277,6 +338,197 @@
       }
     });
 
+    // --- Alerting status + test buttons (email + SMS) ---
+    const alertStatusText = document.getElementById('alertStatusText');
+    const smsStatusText = document.getElementById('smsStatusText');
+    const testAlertBtn = document.getElementById('testAlertBtn');
+    const testAlertStatus = document.getElementById('testAlertStatus');
+    const testSmsBtn = document.getElementById('testSmsBtn');
+    const testSmsStatus = document.getElementById('testSmsStatus');
+
+    async function loadAlertConfig() {
+      try {
+        const res = await fetch('/alert-config');
+        const data = await res.json();
+        alertStatusText.textContent = data.email_enabled
+          ? `ENABLED -- ${data.recipient_count} recipient(s), triggers on [${data.alert_on.join(', ')}]`
+          : 'DISABLED (set alerting.email_enabled: true in config.yaml)';
+        smsStatusText.textContent = data.sms_enabled
+          ? `ENABLED -- ${data.sms_recipient_count} recipient(s), triggers on [${data.sms_alert_on.join(', ')}]`
+          : 'DISABLED (set alerting.sms_enabled: true in config.yaml)';
+      } catch (e) {
+        alertStatusText.textContent = 'failed to load';
+        smsStatusText.textContent = 'failed to load';
+      }
+    }
+    loadAlertConfig();
+
+    testAlertBtn.addEventListener('click', async () => {
+      testAlertBtn.disabled = true;
+      testAlertBtn.textContent = 'Sending...';
+      testAlertStatus.textContent = '';
+      try {
+        const res = await fetch('/test-alert', { method: 'POST' });
+        const data = await res.json();
+        testAlertStatus.textContent = data.ok
+          ? `Sent via ${data.via} to: ${data.recipients.join(', ')}`
+          : `Failed: ${data.error}`;
+      } catch (e) {
+        testAlertStatus.textContent = 'Request failed: ' + e.message;
+      } finally {
+        testAlertBtn.disabled = false;
+        testAlertBtn.textContent = 'Send Test Alert (Email)';
+      }
+    });
+
+    testSmsBtn.addEventListener('click', async () => {
+      testSmsBtn.disabled = true;
+      testSmsBtn.textContent = 'Sending...';
+      testSmsStatus.textContent = '';
+      try {
+        const res = await fetch('/test-sms', { method: 'POST' });
+        const data = await res.json();
+        testSmsStatus.textContent = data.ok
+          ? `Sent via ${data.via} to: ${data.recipients.join(', ')}`
+          : `Failed: ${data.error}`;
+      } catch (e) {
+        testSmsStatus.textContent = 'Request failed: ' + e.message;
+      } finally {
+        testSmsBtn.disabled = false;
+        testSmsBtn.textContent = 'Send Test Alert (SMS)';
+      }
+    });
+
+    // --- Speaker enrollment ---
+    const enrollSpeakerId = document.getElementById('enrollSpeakerId');
+    const enrollAudioFile = document.getElementById('enrollAudioFile');
+    const enrollBtn = document.getElementById('enrollBtn');
+    const enrollStatus = document.getElementById('enrollStatus');
+    const knownSpeakersList = document.getElementById('knownSpeakersList');
+
+    async function loadKnownSpeakers() {
+      try {
+        const res = await fetch('/enrolled-speakers');
+        const data = await res.json();
+        knownSpeakersList.innerHTML = '';
+        if (!data.speakers || !data.speakers.length) {
+          knownSpeakersList.innerHTML = '<div class="chunk-row">No speakers enrolled yet.</div>';
+          return;
+        }
+        for (const id of data.speakers) {
+          const row = document.createElement('div');
+          row.className = 'chunk-row';
+          row.textContent = id;
+          knownSpeakersList.appendChild(row);
+        }
+      } catch (e) {
+        knownSpeakersList.innerHTML = '<div class="chunk-row risk-high">Failed to load speakers.</div>';
+      }
+    }
+    loadKnownSpeakers();
+
+    enrollBtn.addEventListener('click', async () => {
+      const speakerId = enrollSpeakerId.value.trim();
+      if (!speakerId) { alert('Enter a Speaker ID first.'); return; }
+      if (!enrollAudioFile.files.length) { alert('Choose an audio file first.'); return; }
+
+      const formData = new FormData();
+      formData.append('speaker_id', speakerId);
+      formData.append('audio', enrollAudioFile.files[0]);
+
+      enrollBtn.disabled = true;
+      enrollBtn.textContent = 'Enrolling...';
+      enrollStatus.textContent = '';
+
+      try {
+        const res = await fetch('/enroll-speaker', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.error) { alert('Error: ' + data.error); return; }
+        enrollStatus.textContent = `Enrolled "${data.speaker_id}".`;
+        await loadKnownSpeakers();
+      } catch (e) {
+        alert('Request failed: ' + e.message);
+      } finally {
+        enrollBtn.disabled = false;
+        enrollBtn.textContent = 'Enroll Speaker';
+      }
+    });
+
+    // --- Live phone call monitor (polls /live-call-status, reuses the
+    // same streamResult gauge/banner/log the file-based simulator uses) ---
+    const liveCallBtn = document.getElementById('liveCallBtn');
+    let liveCallInterval = null;
+    let liveCallChunksSeen = 0;
+
+    function stopLiveCallMonitor(finalMessage) {
+      if (liveCallInterval) {
+        clearInterval(liveCallInterval);
+        liveCallInterval = null;
+      }
+      liveCallBtn.textContent = 'Start Monitoring';
+      if (finalMessage) streamBanner.textContent = finalMessage;
+    }
+
+    async function pollLiveCallStatus() {
+      try {
+        const res = await fetch('/live-call-status');
+        const data = await res.json();
+
+        if (!data.active) {
+          stopLiveCallMonitor(
+            data.chunk_count > 0
+              ? `Call ended -- final rolling score ${data.rolling_score.toFixed(2)} (${data.risk_level})`
+              : 'Waiting for a call to come in...'
+          );
+          return;
+        }
+
+        if (data.rolling_score === null || data.chunk_count === liveCallChunksSeen) return;
+        liveCallChunksSeen = data.chunk_count;
+
+        const cls = riskClass(data.risk_level);
+        rollingScore.textContent = data.rolling_score.toFixed(2);
+        streamLevel.textContent = data.risk_level;
+        gaugeFill.style.width = Math.min(data.rolling_score, 100) + '%';
+        gaugeFill.className = 'gauge-fill ' + cls;
+
+        streamBanner.textContent =
+          `Live call -- chunk ${data.chunk_count} -- ${data.risk_level} risk -- ${data.recommended_action}`;
+        streamBanner.className = 'banner ' + cls;
+
+        const row = document.createElement('div');
+        row.className = 'chunk-row ' + cls;
+        row.textContent = `chunk ${data.chunk_count}: rolling=${data.rolling_score.toFixed(2)}  risk=${data.risk_level}`;
+        chunkLog.appendChild(row);
+        chunkLog.scrollTop = chunkLog.scrollHeight;
+      } catch (e) {
+        streamBanner.textContent = 'Live call status request failed: ' + e.message;
+        streamBanner.className = 'banner risk-high';
+      }
+    }
+
+    liveCallBtn.addEventListener('click', () => {
+      if (liveCallInterval) {
+        stopLiveCallMonitor('Monitoring stopped.');
+        return;
+      }
+
+      streamResult.classList.remove('hidden');
+      streamResult.className = 'card result-card';
+      streamBanner.textContent = 'Waiting for a call to come in...';
+      streamBanner.className = 'banner';
+      rollingScore.textContent = '--';
+      streamLevel.textContent = '--';
+      gaugeFill.style.width = '0%';
+      gaugeFill.className = 'gauge-fill';
+      chunkLog.innerHTML = '';
+      liveCallChunksSeen = 0;
+
+      liveCallBtn.textContent = 'Stop Monitoring';
+      liveCallInterval = setInterval(pollLiveCallStatus, 1000);
+      pollLiveCallStatus();
+    });
+
     // --- Transaction approval demo ---
     const profileSelect = document.getElementById('profileSelect');
     const approveBtn = document.getElementById('approveBtn');
@@ -293,6 +545,9 @@
     const combinedVoiceValue = document.getElementById('combinedVoiceValue');
     const conflictWarning = document.getElementById('conflictWarning');
     const conflictText = document.getElementById('conflictText');
+    const consistencyResult = document.getElementById('consistencyResult');
+    const speakerSimilarityValue = document.getElementById('speakerSimilarityValue');
+    const speakerMatchValue = document.getElementById('speakerMatchValue');
 
     async function loadProfiles() {
       try {
@@ -331,6 +586,10 @@
       formData.append('new_beneficiary', document.getElementById('ctxNewBeneficiary').checked);
       formData.append('outside_business_hours', document.getElementById('ctxOutsideHours').checked);
       formData.append('previously_flagged', document.getElementById('ctxPreviouslyFlagged').checked);
+      const speakerId = document.getElementById('txSpeakerId').value.trim();
+      if (speakerId) formData.append('speaker_id', speakerId);
+
+      consistencyResult.classList.add('hidden');
 
       approveBtn.disabled = true;
       approveBtn.textContent = 'Checking...';
@@ -352,6 +611,16 @@
         sslScoreValue.textContent = data.ssl_score.toFixed(2);
         mfccScoreValue.textContent = data.mfcc_score.toFixed(2);
         combinedVoiceValue.textContent = data.voice_risk.toFixed(2);
+
+        if (data.speaker_similarity !== undefined) {
+          consistencyResult.classList.remove('hidden');
+          speakerSimilarityValue.textContent = data.speaker_similarity.toFixed(4);
+          speakerMatchValue.textContent = data.speaker_match ? 'MATCH' : 'NO MATCH';
+        } else if (speakerId) {
+          consistencyResult.classList.remove('hidden');
+          speakerSimilarityValue.textContent = 'n/a';
+          speakerMatchValue.textContent = 'not enrolled';
+        }
 
         if (data.conflicted) {
           conflictWarning.classList.remove('hidden');

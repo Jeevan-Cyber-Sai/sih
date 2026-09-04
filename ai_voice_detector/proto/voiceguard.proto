@@ -1,0 +1,68 @@
+syntax = "proto3";
+package voiceguard;
+
+// audio_data on every RPC below is raw 32-bit float PCM samples (mono),
+// NOT a WAV/container file -- i.e. exactly numpy.float32 bytes, matching
+// the in-memory representation used throughout the Python pipeline
+// (predict.py/preprocess.py). sample_rate describes those samples; the
+// server resamples/preprocesses internally as needed. See
+// grpc_client_test.py for the exact encode-side convention.
+
+service VoiceGuard {
+  rpc AnalyzeAudio (AudioRequest) returns (RiskResponse);
+  rpc AnalyzeWithContext (ContextualRequest) returns (RiskResponse);
+  rpc EnrollSpeaker (EnrollRequest) returns (EnrollResponse);
+  rpc VerifyConsistency (VerifyRequest) returns (ConsistencyResponse);
+}
+
+message AudioRequest {
+  bytes audio_data = 1;
+  int32 sample_rate = 2;
+  string profile = 3;
+}
+
+message ContextualRequest {
+  bytes audio_data = 1;
+  int32 sample_rate = 2;
+  string profile = 3;
+  bool caller_known = 4;
+  string channel = 5;
+  float transaction_amount = 6;
+  bool new_beneficiary = 7;
+  bool outside_business_hours = 8;
+  bool previously_flagged = 9;
+  string speaker_id = 10;
+}
+
+message RiskResponse {
+  float voice_risk = 1;
+  float final_risk = 2;
+  string risk_level = 3;
+  string recommended_action = 4;
+  bool conflicted = 5;
+  float speaker_similarity = 6;
+}
+
+message EnrollRequest {
+  string speaker_id = 1;
+  bytes audio_data = 2;
+  int32 sample_rate = 3;
+}
+
+message EnrollResponse {
+  bool success = 1;
+  string speaker_id = 2;
+  string message = 3;
+}
+
+message VerifyRequest {
+  string speaker_id = 1;
+  bytes audio_data = 2;
+  int32 sample_rate = 3;
+}
+
+message ConsistencyResponse {
+  float similarity = 1;
+  bool match = 2;
+  float consistency_risk = 3;
+}

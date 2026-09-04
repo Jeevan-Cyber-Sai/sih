@@ -18,3 +18,17 @@ websockets>=13.0
 flask-sock>=0.7
 requests>=2.28
 gtts>=2.5
+
+# Speaker consistency (speaker_consistency.py). resemblyzer declares a
+# dependency on "webrtcvad", which has no prebuilt Windows wheel and
+# fails to build without MSVC build tools; webrtcvad-wheels ships
+# prebuilt wheels (Windows included) providing the same importable
+# "webrtcvad" module, so it must be installed BEFORE resemblyzer with
+# --no-deps: pip install webrtcvad-wheels && pip install resemblyzer --no-deps
+webrtcvad-wheels>=2.0
+resemblyzer>=0.1.4
+
+# gRPC API (grpc_server.py), running alongside the Flask REST API for
+# enterprise banking integration.
+grpcio>=1.60
+grpcio-tools>=1.60

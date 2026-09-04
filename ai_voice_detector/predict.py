@@ -20,6 +20,7 @@ from features_ssl import (
 from preprocess import chunk_audio, load_and_preprocess
 from privacy import log_risk_event, zero_buffer
 from risk_engine import compute_final_risk, risk_level_for_profile
+from speaker_consistency import verify_speaker
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 MODELS_DIR = os.path.join(ROOT, "models")
@@ -56,8 +57,15 @@ SSL_VARIANT = "truncated"
 
 MFCC_MODEL_PATH = os.path.join(MODELS_DIR, "voice_classifier.joblib")
 MFCC_SCALER_PATH = os.path.join(MODELS_DIR, "scaler.joblib")
-SSL_MODEL_PATH = os.path.join(MODELS_DIR, "voice_classifier_ssl_v2.joblib")
-SSL_SCALER_PATH = os.path.join(MODELS_DIR, "scaler_ssl_v2.joblib")
+# voice_classifier_ssl_indian.joblib supersedes v2: same ASVspoof +
+# real-world training data, PLUS the IndieFake Indian-accent dataset --
+# scored 99-100% across all six clean/real-world/Indian eval buckets and
+# 92.9% detecting unseen Indian-accent clones in leave-one-generator-out
+# testing (see the Colab training session), with no regression on the
+# original categories. v2's files are left in place for comparison/
+# rollback, not deleted.
+SSL_MODEL_PATH = os.path.join(MODELS_DIR, "voice_classifier_ssl_indian.joblib")
+SSL_SCALER_PATH = os.path.join(MODELS_DIR, "scaler_ssl_indian.joblib")
 
 if ACTIVE_BACKEND == "ssl":
     MODEL_PATH, SCALER_PATH = SSL_MODEL_PATH, SSL_SCALER_PATH
@@ -206,21 +214,35 @@ def analyze_file(file_path, profile=None):
     }
 
 
-def analyze_file_with_context(file_path, context=None, profile=None):
-    """Voice risk + contextual risk enrichment, combined per the active
-    profile's weights (see risk_engine.compute_final_risk for the
-    security-critical asymmetry: context can escalate, never suppress).
+def analyze_file_with_context(file_path, context=None, profile=None, speaker_id=None):
+    """Voice risk + contextual risk + (if speaker_id given) cross-session
+    speaker consistency, combined per the active profile's weights (see
+    risk_engine.compute_final_risk for the security-critical asymmetry:
+    context/consistency can escalate, never suppress).
 
-    Voice risk itself now comes from score_dual() -- SSL (primary) + MFCC
-    v3 (independent second opinion) -- rather than a single model."""
+    Voice risk itself comes from score_dual() -- SSL (primary) + MFCC v3
+    (independent second opinion) -- rather than a single model.
+    speaker_id is optional: with no enrolled profile for that ID (or no
+    speaker_id at all), consistency simply isn't part of the blend rather
+    than being treated as a confirmed match or a confirmed risk."""
     audio = load_and_preprocess(file_path)
     dual = score_dual(audio)
+
+    consistency = None
+    if speaker_id:
+        consistency = verify_speaker(speaker_id, audio, sr=16000)
+
     zero_buffer(audio)
 
-    result = compute_final_risk(dual["final_voice_risk"], context, profile)
+    consistency_risk = consistency["consistency_risk"] if consistency else None
+    result = compute_final_risk(dual["final_voice_risk"], context, profile, consistency_risk,
+                                 speaker_id=speaker_id)
     result["ssl_score"] = dual["ssl_score"]
     result["mfcc_score"] = dual["mfcc_score"]
     result["conflicted"] = dual["conflicted"]
+    if consistency:
+        result["speaker_similarity"] = consistency["similarity"]
+        result["speaker_match"] = consistency["match"]
 
     log_risk_event({
         "voice_risk": result["voice_risk"],

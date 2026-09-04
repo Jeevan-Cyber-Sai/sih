@@ -28,3 +28,16 @@ IndieFake  Dataset/
 data_indian/
 data_indian_augmented/
 features_indian.npy
+
+# Hindi/Tamil multilingual dataset: raw IndicTTS pulls + edge-tts
+# synthesized fakes are large binary data, reproducible via
+# scripts/extract_indictts_real.py and scripts/build_multilingual_fake.py
+# -- not versioned, same rationale as data_indian/ above. transcripts.json
+# IS worth keeping since it's small and pins exactly which sentences were
+# used, but isn't tracked yet either -- add explicitly if wanted later.
+data_hindi/
+data_tamil/
+features_hindi.npy
+features_tamil.npy
+
+*.egg-info/
