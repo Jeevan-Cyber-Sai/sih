@@ -46,6 +46,15 @@ MODELS = [
     ("SSL v2 (balanced aug, XLS-R-300M)", "voice_classifier_ssl_v2.joblib", "scaler_ssl_v2.joblib", "ssl_xlsr"),
     ("(c) SSL v2, XLS-R truncated", "voice_classifier_ssl_v2.joblib", "scaler_ssl_v2.joblib", "ssl_truncated"),
     ("(d) SSL v2, XLS-R truncated+int8", "voice_classifier_ssl_v2.joblib", "scaler_ssl_v2.joblib", "ssl_quantized"),
+    # +IndieFake+Hindi+Tamil (train_ssl.py --multilingual) -- same
+    # "truncated" fp32 extractor as (c), numerically identical to the
+    # full XLS-R model's layer-6 output, so this is an apples-to-apples
+    # comparison against SSL v2 on the SAME four English/real-world
+    # quadrants (Hindi/Tamil generalization is evaluated separately in
+    # scripts/per_language_eval.py -- this script only answers "did adding
+    # more languages regress the original production quadrants").
+    ("SSL multilingual (+IndieFake+Hindi+Tamil)", "voice_classifier_ssl_multilingual.joblib",
+     "scaler_ssl_multilingual.joblib", "ssl_truncated"),
 ]
 
 

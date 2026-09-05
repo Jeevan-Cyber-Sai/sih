@@ -160,11 +160,34 @@ def main():
                          help="train v3 on the fully balanced dataset (data/ + data_realworld/real/ "
                               "+ data_realworld/fake/) instead of data/ alone; "
                               "saves as voice_classifier_v3.joblib / scaler_v3.joblib")
+    parser.add_argument("--multilingual", action="store_true",
+                         help="train on --augmented's sources PLUS Hindi and Tamil MFCC features "
+                              "(features_hindi_mfcc.npy / features_tamil_mfcc.npy, built by "
+                              "scripts/extract_multilingual_mfcc_features.py). Does NOT include IndieFake "
+                              "(never wired into the MFCC branch, and extracting its ~39k files' MFCC "
+                              "features from scratch -- no cache exists for this branch -- would take "
+                              "hours; skipped by explicit choice rather than eating that cost here). "
+                              "Saves as voice_classifier_v3_multilingual.joblib / scaler_v3_multilingual.joblib")
     args = parser.parse_args()
 
     t0 = time.time()
 
-    if args.augmented:
+    if args.multilingual:
+        X, y = build_dataset_augmented()
+        for lang in ("hindi", "tamil"):
+            lang_path = os.path.join(ROOT, f"features_{lang}_mfcc.npy")
+            if not os.path.exists(lang_path):
+                raise FileNotFoundError(
+                    f"{lang_path} not found -- run scripts/extract_multilingual_mfcc_features.py {lang} first."
+                )
+            lang_feats = np.load(lang_path, allow_pickle=True).item()
+            X_lang, y_lang = lang_feats["X"], lang_feats["y"]
+            print(f"loaded {lang} MFCC features: X.shape={X_lang.shape}  "
+                  f"(real={int((y_lang==0).sum())}, fake={int((y_lang==1).sum())})")
+            X = np.concatenate([X, X_lang], axis=0)
+            y = np.concatenate([y, y_lang], axis=0)
+        model_name, scaler_name = "voice_classifier_v3_multilingual.joblib", "scaler_v3_multilingual.joblib"
+    elif args.augmented:
         X, y = build_dataset_augmented()
         model_name, scaler_name = "voice_classifier_v3.joblib", "scaler_v3.joblib"
     else:

@@ -89,7 +89,7 @@ def compute_context_risk(context=None):
 
 
 def compute_final_risk(voice_risk, context=None, profile_name=None, consistency_risk=None,
-                        speaker_id=None, call_id=None):
+                        speaker_id=None, call_id=None, ssl_score=None):
     """Combines voice_risk (0-100, from the audio model), context_risk
     (0-100, from call/transaction metadata), and consistency_risk (0-100,
     from speaker_consistency.verify_speaker() -- "is this the same
@@ -108,21 +108,34 @@ def compute_final_risk(voice_risk, context=None, profile_name=None, consistency_
 
     SECURITY-CRITICAL ASYMMETRY, deliberate and non-negotiable: context
     and consistency can only push risk UP, never down. If voice_risk
-    alone already clears the active profile's HIGH threshold, final_risk
-    is floored at that threshold no matter how favourable context or
-    consistency look -- a known caller number, a familiar beneficiary,
-    business hours, or even a voice that matches the enrolled profile,
-    none of it can pull a voice-level HIGH back down. This matters
-    because a known/trusted number, and a voice matching a stored
-    profile, are *exactly* what a real attacker's clone is built to
-    produce -- a synthetic clone that successfully matches the victim's
-    own stored voiceprint is the worst-case attack, not a reassuring
-    result. Context and consistency are corroborating evidence for
-    escalating risk, never grounds for dismissing a voice-level HIGH
-    finding. Without this floor, the weighted blend (voice_risk *
-    voice_weight, with voice_weight < 1) could mathematically dilute a
-    HIGH voice score below the HIGH threshold purely because the other
-    signals were low -- this floor exists specifically to prevent that.
+    ALONE, or ssl_score ALONE, already clears the active profile's HIGH
+    threshold, final_risk is floored at that threshold no matter how
+    favourable context or consistency look -- a known caller number, a
+    familiar beneficiary, business hours, or even a voice that matches
+    the enrolled profile, none of it can pull a voice-level HIGH back
+    down. This matters because a known/trusted number, and a voice
+    matching a stored profile, are *exactly* what a real attacker's
+    clone is built to produce -- a synthetic clone that successfully
+    matches the victim's own stored voiceprint is the worst-case attack,
+    not a reassuring result. Context and consistency are corroborating
+    evidence for escalating risk, never grounds for dismissing a
+    voice-level HIGH finding. Without this floor, the weighted blend
+    (voice_risk * voice_weight, with voice_weight < 1) could
+    mathematically dilute a HIGH voice score below the HIGH threshold
+    purely because the other signals were low -- this floor exists
+    specifically to prevent that.
+
+    The ssl_score-alone check is a SEPARATE, additional trigger for the
+    same floor, not a replacement for the voice_risk one: SSL is the
+    primary/most-trusted layer (predict.py's LAYER_WEIGHTS), so its own
+    HIGH verdict must survive even if MFCC v3 or phase-spectrum disagree
+    strongly enough to pull the blended voice_risk itself back under the
+    threshold -- an independent second/third opinion disagreeing with
+    SSL is grounds to flag "conflicted" (see predict.score_all_layers),
+    never grounds to override SSL's own confident HIGH call. ssl_score is
+    optional (None from any caller that doesn't have it split out from
+    voice_risk) -- when absent, only the voice_risk-based floor applies,
+    unchanged from before this layer existed.
     """
     profile_name, profile = get_profile(profile_name)
     voice_weight = profile["voice_weight"]
@@ -142,7 +155,8 @@ def compute_final_risk(voice_risk, context=None, profile_name=None, consistency_
             + consistency_risk * consistency_weight
         )
 
-    if voice_risk >= high_threshold:
+    floor_triggered = voice_risk >= high_threshold or (ssl_score is not None and ssl_score >= high_threshold)
+    if floor_triggered:
         final_risk = max(weighted, high_threshold)  # <-- the security floor
     else:
         final_risk = weighted

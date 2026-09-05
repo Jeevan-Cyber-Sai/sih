@@ -14,6 +14,16 @@ profiles:
     voice_weight: 0.64
     context_weight: 0.16
     consistency_weight: 0.2
+    # Internal sub-weights of voice_weight itself: how SSL/MFCC v3/phase
+    # combine into the single voice_risk number above, BEFORE it ever
+    # reaches context_weight/consistency_weight (see predict.py's
+    # score_all_layers -- LAYER_WEIGHTS reads these three, not the other
+    # way around). Same values across all profiles for now (structured
+    # per-profile for future flexibility, not because they currently
+    # differ) -- if these three are ever changed, keep them summing to 1.0.
+    ssl_weight: 0.60
+    mfcc_weight: 0.25
+    phase_weight: 0.15
 
   high_value_transaction:
     # more conservative: escalates to MEDIUM/HIGH sooner, and leans more
@@ -26,6 +36,9 @@ profiles:
     voice_weight: 0.42
     context_weight: 0.28
     consistency_weight: 0.3
+    ssl_weight: 0.60
+    mfcc_weight: 0.25
+    phase_weight: 0.15
 
   privileged_access:
     # e.g. resetting credentials, granting access -- similarly
@@ -35,6 +48,9 @@ profiles:
     voice_weight: 0.42
     context_weight: 0.28
     consistency_weight: 0.3
+    ssl_weight: 0.60
+    mfcc_weight: 0.25
+    phase_weight: 0.15
 
 # Additive contextual risk scoring. Each flag contributes points if
 # present/true; total is capped at 100. These are all *escalating* signals

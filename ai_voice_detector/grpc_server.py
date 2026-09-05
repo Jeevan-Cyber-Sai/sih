@@ -74,6 +74,10 @@ class VoiceGuardServicer(voiceguard_pb2_grpc.VoiceGuardServicer):
             recommended_action=result["recommended_action"],
             conflicted=result.get("conflicted", False),
             speaker_similarity=result.get("speaker_similarity", 0.0),
+            ssl_score=result.get("ssl_score", 0.0),
+            mfcc_score=result.get("mfcc_score", 0.0),
+            phase_score=result.get("phase_score", 0.0),
+            conflict_detail=result.get("conflict_detail") or "",
         )
 
     def AnalyzeWithContext(self, request, context):
@@ -108,6 +112,10 @@ class VoiceGuardServicer(voiceguard_pb2_grpc.VoiceGuardServicer):
             recommended_action=result["recommended_action"],
             conflicted=result.get("conflicted", False),
             speaker_similarity=result.get("speaker_similarity", 0.0),
+            ssl_score=result.get("ssl_score", 0.0),
+            mfcc_score=result.get("mfcc_score", 0.0),
+            phase_score=result.get("phase_score", 0.0),
+            conflict_detail=result.get("conflict_detail") or "",
         )
 
     def EnrollSpeaker(self, request, context):

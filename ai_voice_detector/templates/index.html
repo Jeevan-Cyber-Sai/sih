@@ -155,16 +155,24 @@
 
         <div class="dual-score-grid">
           <div class="dual-score-tile">
-            <span class="field-label">SSL score (primary)</span>
+            <span class="field-label">SSL Score (primary — deep learning)</span>
             <div class="dual-score-value" id="sslScoreValue">--</div>
           </div>
           <div class="dual-score-tile">
-            <span class="field-label">MFCC score (secondary)</span>
+            <span class="field-label">MFCC+Prosody Score (signal processing layer)</span>
             <div class="dual-score-value" id="mfccScoreValue">--</div>
+          </div>
+          <div class="dual-score-tile">
+            <span class="field-label">Phase Score (phase coherence layer)</span>
+            <div class="dual-score-value" id="phaseScoreValue">--</div>
           </div>
           <div class="dual-score-tile">
             <span class="field-label">Combined voice risk</span>
             <div class="dual-score-value" id="combinedVoiceValue">--</div>
+          </div>
+          <div class="dual-score-tile">
+            <span class="field-label">Detected language</span>
+            <div class="dual-score-value" id="detectedLanguageValue">--</div>
           </div>
         </div>
 
@@ -542,7 +550,9 @@
     const approvalSuccess = document.getElementById('approvalSuccess');
     const sslScoreValue = document.getElementById('sslScoreValue');
     const mfccScoreValue = document.getElementById('mfccScoreValue');
+    const phaseScoreValue = document.getElementById('phaseScoreValue');
     const combinedVoiceValue = document.getElementById('combinedVoiceValue');
+    const detectedLanguageValue = document.getElementById('detectedLanguageValue');
     const conflictWarning = document.getElementById('conflictWarning');
     const conflictText = document.getElementById('conflictText');
     const consistencyResult = document.getElementById('consistencyResult');
@@ -610,7 +620,10 @@
 
         sslScoreValue.textContent = data.ssl_score.toFixed(2);
         mfccScoreValue.textContent = data.mfcc_score.toFixed(2);
+        phaseScoreValue.textContent = data.phase_score.toFixed(2);
         combinedVoiceValue.textContent = data.voice_risk.toFixed(2);
+        detectedLanguageValue.textContent =
+          `${data.detected_language} (${data.language_confidence.toFixed(1)}%)`;
 
         if (data.speaker_similarity !== undefined) {
           consistencyResult.classList.remove('hidden');
@@ -625,8 +638,9 @@
         if (data.conflicted) {
           conflictWarning.classList.remove('hidden');
           conflictText.textContent =
-            `SSL and MFCC disagree by ${Math.abs(data.ssl_score - data.mfcc_score).toFixed(2)} points `
-            + `(SSL=${data.ssl_score.toFixed(2)}, MFCC=${data.mfcc_score.toFixed(2)}) -- treat this result with caution.`;
+            `${data.conflict_detail} disagree -- elevated uncertainty `
+            + `(SSL=${data.ssl_score.toFixed(2)}, MFCC=${data.mfcc_score.toFixed(2)}, Phase=${data.phase_score.toFixed(2)}). `
+            + `Treat this result with caution.`;
         }
 
         if (data.risk_level === 'LOW') {

@@ -37,7 +37,11 @@ features_indian.npy
 # used, but isn't tracked yet either -- add explicitly if wanted later.
 data_hindi/
 data_tamil/
+data_hindi_augmented/
+data_tamil_augmented/
 features_hindi.npy
 features_tamil.npy
+features_hindi_mfcc.npy
+features_tamil_mfcc.npy
 
 *.egg-info/

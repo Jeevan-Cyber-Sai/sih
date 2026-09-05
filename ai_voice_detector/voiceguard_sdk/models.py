@@ -24,6 +24,10 @@ class RiskResponse:
     recommended_action: str
     conflicted: bool = False
     speaker_similarity: Optional[float] = None
+    ssl_score: Optional[float] = None
+    mfcc_score: Optional[float] = None
+    phase_score: Optional[float] = None
+    conflict_detail: Optional[str] = None
 
 
 @dataclass

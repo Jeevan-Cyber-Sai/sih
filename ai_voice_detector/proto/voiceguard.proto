@@ -41,6 +41,10 @@ message RiskResponse {
   string recommended_action = 4;
   bool conflicted = 5;
   float speaker_similarity = 6;
+  float ssl_score = 7;
+  float mfcc_score = 8;
+  float phase_score = 9;
+  string conflict_detail = 10;
 }
 
 message EnrollRequest {

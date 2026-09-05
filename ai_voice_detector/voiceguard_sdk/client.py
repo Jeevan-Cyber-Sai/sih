@@ -192,6 +192,8 @@ class VoiceGuardClient:
                     voice_risk=resp.voice_risk, final_risk=resp.final_risk,
                     risk_level=resp.risk_level, recommended_action=resp.recommended_action,
                     conflicted=resp.conflicted, speaker_similarity=resp.speaker_similarity or None,
+                    ssl_score=resp.ssl_score, mfcc_score=resp.mfcc_score, phase_score=resp.phase_score,
+                    conflict_detail=resp.conflict_detail or None,
                 )
 
             import requests
@@ -217,6 +219,8 @@ class VoiceGuardClient:
                 risk_level=body["risk_level"], recommended_action=body["recommended_action"],
                 conflicted=body.get("conflicted", False),
                 speaker_similarity=body.get("speaker_similarity"),
+                ssl_score=body.get("ssl_score"), mfcc_score=body.get("mfcc_score"),
+                phase_score=body.get("phase_score"), conflict_detail=body.get("conflict_detail"),
             )
         except VoiceGuardException:
             raise

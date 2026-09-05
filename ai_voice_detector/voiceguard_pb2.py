@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10voiceguard.proto\x12\nvoiceguard\"H\n\x0c\x41udioRequest\x12\x12\n\naudio_data\x18\x01 \x01(\x0c\x12\x13\n\x0bsample_rate\x18\x02 \x01(\x05\x12\x0f\n\x07profile\x18\x03 \x01(\t\"\xf9\x01\n\x11\x43ontextualRequest\x12\x12\n\naudio_data\x18\x01 \x01(\x0c\x12\x13\n\x0bsample_rate\x18\x02 \x01(\x05\x12\x0f\n\x07profile\x18\x03 \x01(\t\x12\x14\n\x0c\x63\x61ller_known\x18\x04 \x01(\x08\x12\x0f\n\x07\x63hannel\x18\x05 \x01(\t\x12\x1a\n\x12transaction_amount\x18\x06 \x01(\x02\x12\x17\n\x0fnew_beneficiary\x18\x07 \x01(\x08\x12\x1e\n\x16outside_business_hours\x18\x08 \x01(\x08\x12\x1a\n\x12previously_flagged\x18\t \x01(\x08\x12\x12\n\nspeaker_id\x18\n \x01(\t\"\x96\x01\n\x0cRiskResponse\x12\x12\n\nvoice_risk\x18\x01 \x01(\x02\x12\x12\n\nfinal_risk\x18\x02 \x01(\x02\x12\x12\n\nrisk_level\x18\x03 \x01(\t\x12\x1a\n\x12recommended_action\x18\x04 \x01(\t\x12\x12\n\nconflicted\x18\x05 \x01(\x08\x12\x1a\n\x12speaker_similarity\x18\x06 \x01(\x02\"L\n\rEnrollRequest\x12\x12\n\nspeaker_id\x18\x01 \x01(\t\x12\x12\n\naudio_data\x18\x02 \x01(\x0c\x12\x13\n\x0bsample_rate\x18\x03 \x01(\x05\"F\n\x0e\x45nrollResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x12\n\nspeaker_id\x18\x02 \x01(\t\x12\x0f\n\x07message\x18\x03 \x01(\t\"L\n\rVerifyRequest\x12\x12\n\nspeaker_id\x18\x01 \x01(\t\x12\x12\n\naudio_data\x18\x02 \x01(\x0c\x12\x13\n\x0bsample_rate\x18\x03 \x01(\x05\"R\n\x13\x43onsistencyResponse\x12\x12\n\nsimilarity\x18\x01 \x01(\x02\x12\r\n\x05match\x18\x02 \x01(\x08\x12\x18\n\x10\x63onsistency_risk\x18\x03 \x01(\x02\x32\xb8\x02\n\nVoiceGuard\x12\x42\n\x0c\x41nalyzeAudio\x12\x18.voiceguard.AudioRequest\x1a\x18.voiceguard.RiskResponse\x12M\n\x12\x41nalyzeWithContext\x12\x1d.voiceguard.ContextualRequest\x1a\x18.voiceguard.RiskResponse\x12\x46\n\rEnrollSpeaker\x12\x19.voiceguard.EnrollRequest\x1a\x1a.voiceguard.EnrollResponse\x12O\n\x11VerifyConsistency\x12\x19.voiceguard.VerifyRequest\x1a\x1f.voiceguard.ConsistencyResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10voiceguard.proto\x12\nvoiceguard\"H\n\x0c\x41udioRequest\x12\x12\n\naudio_data\x18\x01 \x01(\x0c\x12\x13\n\x0bsample_rate\x18\x02 \x01(\x05\x12\x0f\n\x07profile\x18\x03 \x01(\t\"\xf9\x01\n\x11\x43ontextualRequest\x12\x12\n\naudio_data\x18\x01 \x01(\x0c\x12\x13\n\x0bsample_rate\x18\x02 \x01(\x05\x12\x0f\n\x07profile\x18\x03 \x01(\t\x12\x14\n\x0c\x63\x61ller_known\x18\x04 \x01(\x08\x12\x0f\n\x07\x63hannel\x18\x05 \x01(\t\x12\x1a\n\x12transaction_amount\x18\x06 \x01(\x02\x12\x17\n\x0fnew_beneficiary\x18\x07 \x01(\x08\x12\x1e\n\x16outside_business_hours\x18\x08 \x01(\x08\x12\x1a\n\x12previously_flagged\x18\t \x01(\x08\x12\x12\n\nspeaker_id\x18\n \x01(\t\"\xeb\x01\n\x0cRiskResponse\x12\x12\n\nvoice_risk\x18\x01 \x01(\x02\x12\x12\n\nfinal_risk\x18\x02 \x01(\x02\x12\x12\n\nrisk_level\x18\x03 \x01(\t\x12\x1a\n\x12recommended_action\x18\x04 \x01(\t\x12\x12\n\nconflicted\x18\x05 \x01(\x08\x12\x1a\n\x12speaker_similarity\x18\x06 \x01(\x02\x12\x11\n\tssl_score\x18\x07 \x01(\x02\x12\x12\n\nmfcc_score\x18\x08 \x01(\x02\x12\x13\n\x0bphase_score\x18\t \x01(\x02\x12\x17\n\x0f\x63onflict_detail\x18\n \x01(\t\"L\n\rEnrollRequest\x12\x12\n\nspeaker_id\x18\x01 \x01(\t\x12\x12\n\naudio_data\x18\x02 \x01(\x0c\x12\x13\n\x0bsample_rate\x18\x03 \x01(\x05\"F\n\x0e\x45nrollResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x12\n\nspeaker_id\x18\x02 \x01(\t\x12\x0f\n\x07message\x18\x03 \x01(\t\"L\n\rVerifyRequest\x12\x12\n\nspeaker_id\x18\x01 \x01(\t\x12\x12\n\naudio_data\x18\x02 \x01(\x0c\x12\x13\n\x0bsample_rate\x18\x03 \x01(\x05\"R\n\x13\x43onsistencyResponse\x12\x12\n\nsimilarity\x18\x01 \x01(\x02\x12\r\n\x05match\x18\x02 \x01(\x08\x12\x18\n\x10\x63onsistency_risk\x18\x03 \x01(\x02\x32\xb8\x02\n\nVoiceGuard\x12\x42\n\x0c\x41nalyzeAudio\x12\x18.voiceguard.AudioRequest\x1a\x18.voiceguard.RiskResponse\x12M\n\x12\x41nalyzeWithContext\x12\x1d.voiceguard.ContextualRequest\x1a\x18.voiceguard.RiskResponse\x12\x46\n\rEnrollSpeaker\x12\x19.voiceguard.EnrollRequest\x1a\x1a.voiceguard.EnrollResponse\x12O\n\x11VerifyConsistency\x12\x19.voiceguard.VerifyRequest\x1a\x1f.voiceguard.ConsistencyResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -36,15 +36,15 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_CONTEXTUALREQUEST']._serialized_start=107
   _globals['_CONTEXTUALREQUEST']._serialized_end=356
   _globals['_RISKRESPONSE']._serialized_start=359
-  _globals['_RISKRESPONSE']._serialized_end=509
-  _globals['_ENROLLREQUEST']._serialized_start=511
-  _globals['_ENROLLREQUEST']._serialized_end=587
-  _globals['_ENROLLRESPONSE']._serialized_start=589
-  _globals['_ENROLLRESPONSE']._serialized_end=659
-  _globals['_VERIFYREQUEST']._serialized_start=661
-  _globals['_VERIFYREQUEST']._serialized_end=737
-  _globals['_CONSISTENCYRESPONSE']._serialized_start=739
-  _globals['_CONSISTENCYRESPONSE']._serialized_end=821
-  _globals['_VOICEGUARD']._serialized_start=824
-  _globals['_VOICEGUARD']._serialized_end=1136
+  _globals['_RISKRESPONSE']._serialized_end=594
+  _globals['_ENROLLREQUEST']._serialized_start=596
+  _globals['_ENROLLREQUEST']._serialized_end=672
+  _globals['_ENROLLRESPONSE']._serialized_start=674
+  _globals['_ENROLLRESPONSE']._serialized_end=744
+  _globals['_VERIFYREQUEST']._serialized_start=746
+  _globals['_VERIFYREQUEST']._serialized_end=822
+  _globals['_CONSISTENCYRESPONSE']._serialized_start=824
+  _globals['_CONSISTENCYRESPONSE']._serialized_end=906
+  _globals['_VOICEGUARD']._serialized_start=909
+  _globals['_VOICEGUARD']._serialized_end=1221
 # @@protoc_insertion_point(module_scope)

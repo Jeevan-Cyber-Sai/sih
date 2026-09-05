@@ -207,6 +207,10 @@ def main():
                               "IndieFake Indian-accent dataset (features_indian.npy, built by "
                               "scripts/extract_indian_ssl_features.py); saves as "
                               "voice_classifier_ssl_indian.joblib / scaler_ssl_indian.joblib")
+    parser.add_argument("--multilingual", action="store_true",
+                         help="train on --indian's sources PLUS Hindi and Tamil (features_hindi.npy / "
+                              "features_tamil.npy, built by scripts/extract_multilingual_ssl_features.py); "
+                              "saves as voice_classifier_ssl_multilingual.joblib / scaler_ssl_multilingual.joblib")
     parser.add_argument("--model-name", default=None,
                          help="skip the auto speed benchmark and force a specific HF model name")
     args = parser.parse_args()
@@ -214,7 +218,11 @@ def main():
     os.makedirs(CACHE_DIR, exist_ok=True)
     os.makedirs(MODELS_DIR, exist_ok=True)
 
-    if args.indian:
+    if args.multilingual:
+        sources = [(REAL_DIR, 0), (REALWORLD_REAL_DIR, 0), (FAKE_DIR, 1), (REALWORLD_FAKE_DIR, 1)]
+        sources += [(d, 1) for d in GENERATOR_FAKE_DIRS]
+        model_out, scaler_out = "voice_classifier_ssl_multilingual.joblib", "scaler_ssl_multilingual.joblib"
+    elif args.indian:
         sources = [(REAL_DIR, 0), (REALWORLD_REAL_DIR, 0), (FAKE_DIR, 1), (REALWORLD_FAKE_DIR, 1)]
         sources += [(d, 1) for d in GENERATOR_FAKE_DIRS]
         model_out, scaler_out = "voice_classifier_ssl_indian.joblib", "scaler_ssl_indian.joblib"
@@ -237,12 +245,13 @@ def main():
     if args.model_name:
         model_name = args.model_name
         print(f"using forced model: {model_name}")
-    elif args.indian:
-        # the Indian features were already extracted with XLS-R-300M
-        # (truncated) -- stay on the same model for the rest of the
-        # combined dataset instead of re-benchmarking a different one.
+    elif args.indian or args.multilingual:
+        # the Indian (and Hindi/Tamil) features were already extracted
+        # with XLS-R-300M (truncated) -- stay on the same model for the
+        # rest of the combined dataset instead of re-benchmarking a
+        # different one.
         model_name = XLSR_MODEL
-        print(f"using {model_name} (matches features_indian.npy)")
+        print(f"using {model_name} (matches features_indian.npy / features_hindi.npy / features_tamil.npy)")
     else:
         random.seed(0)
         sample_paths = random.sample(all_files, min(6, n_files))
@@ -255,7 +264,7 @@ def main():
     extraction_time = time.time() - t0
     print(f"extraction done in {extraction_time:.1f}s")
 
-    if args.indian:
+    if args.indian or args.multilingual:
         indian_path = os.path.join(ROOT, "features_indian.npy")
         if not os.path.exists(indian_path):
             raise FileNotFoundError(
@@ -267,6 +276,20 @@ def main():
               f"(real={int((y_indian==0).sum())}, fake={int((y_indian==1).sum())})")
         X = np.concatenate([X, X_indian], axis=0)
         y = np.concatenate([y, y_indian], axis=0)
+
+    if args.multilingual:
+        for lang in ("hindi", "tamil"):
+            lang_path = os.path.join(ROOT, f"features_{lang}.npy")
+            if not os.path.exists(lang_path):
+                raise FileNotFoundError(
+                    f"{lang_path} not found -- run scripts/extract_multilingual_ssl_features.py {lang} first."
+                )
+            lang_feats = np.load(lang_path, allow_pickle=True).item()
+            X_lang, y_lang = lang_feats["X"], lang_feats["y"]
+            print(f"loaded {lang} features: X.shape={X_lang.shape}  "
+                  f"(real={int((y_lang==0).sum())}, fake={int((y_lang==1).sum())})")
+            X = np.concatenate([X, X_lang], axis=0)
+            y = np.concatenate([y, y_lang], axis=0)
 
     print(f"\nX.shape={X.shape}  y.shape={y.shape}  embedding_dim={X.shape[1]}")
 

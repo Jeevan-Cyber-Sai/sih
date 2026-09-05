@@ -17,9 +17,11 @@ from features_ssl import (
     load_ssl_model,
     load_ssl_model_truncated_direct,
 )
+from language_id import detect_language, load_language_model
+from phase_classifier import load_phase_model, score_phase
 from preprocess import chunk_audio, load_and_preprocess
 from privacy import log_risk_event, zero_buffer
-from risk_engine import compute_final_risk, risk_level_for_profile
+from risk_engine import compute_final_risk, get_profile, risk_level_for_profile
 from speaker_consistency import verify_speaker
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -57,15 +59,17 @@ SSL_VARIANT = "truncated"
 
 MFCC_MODEL_PATH = os.path.join(MODELS_DIR, "voice_classifier.joblib")
 MFCC_SCALER_PATH = os.path.join(MODELS_DIR, "scaler.joblib")
-# voice_classifier_ssl_indian.joblib supersedes v2: same ASVspoof +
-# real-world training data, PLUS the IndieFake Indian-accent dataset --
-# scored 99-100% across all six clean/real-world/Indian eval buckets and
-# 92.9% detecting unseen Indian-accent clones in leave-one-generator-out
-# testing (see the Colab training session), with no regression on the
-# original categories. v2's files are left in place for comparison/
-# rollback, not deleted.
-SSL_MODEL_PATH = os.path.join(MODELS_DIR, "voice_classifier_ssl_indian.joblib")
-SSL_SCALER_PATH = os.path.join(MODELS_DIR, "scaler_ssl_indian.joblib")
+# voice_classifier_ssl_multilingual.joblib supersedes ssl_indian (which
+# itself superseded v2): same ASVspoof + real-world + IndieFake training
+# data, PLUS Hindi and Tamil (IndicTTS real + edge-tts synthetic fakes,
+# see scripts/extract_indictts_real.py / build_multilingual_fake.py) --
+# matched SSL v2 exactly on all four original clean/real-world quadrants
+# (scripts/four_quadrant_eval.py: 100%/100%/100%/99%, zero regression)
+# while adding 99.5%+ per-language accuracy on Hindi/Tamil when the
+# language is in training (scripts/per_language_eval.py --breakdown).
+# Older files are left in place for comparison/rollback, not deleted.
+SSL_MODEL_PATH = os.path.join(MODELS_DIR, "voice_classifier_ssl_multilingual.joblib")
+SSL_SCALER_PATH = os.path.join(MODELS_DIR, "scaler_ssl_multilingual.joblib")
 
 if ACTIVE_BACKEND == "ssl":
     MODEL_PATH, SCALER_PATH = SSL_MODEL_PATH, SSL_SCALER_PATH
@@ -93,7 +97,7 @@ def load_model():
 
 
 # MFCC v3 loaded as a second, independent opinion alongside whichever
-# model ACTIVE_BACKEND points at -- see score_dual().
+# model ACTIVE_BACKEND points at -- see score_all_layers().
 MFCC_V3_MODEL_PATH = os.path.join(MODELS_DIR, "voice_classifier_v3.joblib")
 MFCC_V3_SCALER_PATH = os.path.join(MODELS_DIR, "scaler_v3.joblib")
 
@@ -137,21 +141,38 @@ def score_single_clip(audio, clf, scaler):
     return round(float(proba_fake) * 100, 2)
 
 
-# Dual-scoring: SSL is the primary/production model, MFCC v3 runs as an
-# independent second opinion using entirely different features (hand-
-# crafted spectral/pitch stats vs. a pretrained transformer's learned
-# representation). Two architectures rarely share the same blind spots,
-# so large disagreement between them is itself a useful signal.
-DUAL_SCORE_WEIGHTS = {"ssl": 0.7, "mfcc": 0.3}
-CONFLICT_THRESHOLD = 40  # point gap between the two scores that counts as "conflicted"
+# Four-layer scoring: SSL is the primary/production model, MFCC v3 and
+# the phase-spectrum classifier run as independent second/third opinions
+# using entirely different features (hand-crafted spectral/pitch stats;
+# STFT phase-only statistics) from SSL's pretrained-transformer
+# embeddings and from each other. Three architectures examining three
+# different aspects of the signal rarely share the same blind spots, so
+# disagreement between any pair of them is itself a useful signal.
+#
+# Sourced from config.yaml (ssl_weight/mfcc_weight/phase_weight) rather
+# than hardcoded, so there's one place to tune them -- read once from the
+# default profile at import time. score_all_layers() runs BEFORE any
+# per-call profile is applied (it produces the single voice_risk number
+# that compute_final_risk() later blends against context/consistency for
+# a specific profile), so if these three weights are ever made to
+# genuinely differ per profile rather than just being duplicated
+# identically in each one, this would need to become profile-aware too.
+_, _default_profile = get_profile()
+LAYER_WEIGHTS = {
+    "ssl": _default_profile["ssl_weight"],
+    "mfcc": _default_profile["mfcc_weight"],
+    "phase": _default_profile["phase_weight"],
+}
+CONFLICT_THRESHOLD = 40  # point gap between any two of the three scores that counts as "conflicted"
 
 
-def score_dual(audio):
-    """Scores `audio` with both the SSL model and the MFCC v3 model
-    independently, returning both raw scores plus a weighted combination.
-    Flags large disagreement (e.g. one says LOW, the other HIGH) as
-    "conflicted" -- surfaced separately rather than silently averaged
-    away, since that disagreement is diagnostically useful on its own."""
+def score_all_layers(audio):
+    """Scores `audio` with the SSL, MFCC v3, and phase-spectrum models
+    independently, returning all three raw scores plus a weighted
+    combination. Flags "conflicted" if ANY two of the three scores
+    disagree by more than CONFLICT_THRESHOLD points -- surfaced
+    separately rather than silently averaged away, since disagreement
+    between independent detectors is diagnostically useful on its own."""
     ssl_clf, ssl_scaler = load_model()
     mfcc_clf, mfcc_scaler = load_mfcc_v3_model()
 
@@ -161,16 +182,49 @@ def score_dual(audio):
     mfcc_feats_scaled = mfcc_scaler.transform(mfcc_feats)
     mfcc_score = round(float(mfcc_clf.predict_proba(mfcc_feats_scaled)[0][1]) * 100, 2)
 
+    phase_score = score_phase(audio)
+
+    # Language ID (Part 5 of the multilingual PS requirement): its own
+    # cheap "truncated" SSL forward pass -- numerically identical to
+    # score_single_clip's internal one when ACTIVE_BACKEND=="ssl", but
+    # kept independent so language detection stays correct even if the
+    # active backend/variant is ever flipped away from SSL.
+    lang_feats = extract_ssl_features_truncated_direct(audio, quantize=False).reshape(1, -1)
+    detected_language, language_confidence = detect_language(lang_feats)
+
     final_voice_risk = round(
-        ssl_score * DUAL_SCORE_WEIGHTS["ssl"] + mfcc_score * DUAL_SCORE_WEIGHTS["mfcc"], 2
+        ssl_score * LAYER_WEIGHTS["ssl"]
+        + mfcc_score * LAYER_WEIGHTS["mfcc"]
+        + phase_score * LAYER_WEIGHTS["phase"],
+        2,
     )
-    conflicted = abs(ssl_score - mfcc_score) > CONFLICT_THRESHOLD
+
+    # Named per-pair gaps rather than just a boolean -- "SSL vs Phase"
+    # disagreeing is a different diagnostic story than "SSL vs MFCC", and
+    # collapsing them into one flag would throw that away. Sorted by gap
+    # size so conflict_detail names the WORST disagreement first when
+    # more than one pair crosses the threshold.
+    pair_gaps = [
+        ("SSL vs MFCC", abs(ssl_score - mfcc_score)),
+        ("SSL vs Phase", abs(ssl_score - phase_score)),
+        ("MFCC vs Phase", abs(mfcc_score - phase_score)),
+    ]
+    conflicting_pairs = sorted(
+        (name for name, gap in pair_gaps if gap > CONFLICT_THRESHOLD),
+        key=lambda name: -dict(pair_gaps)[name],
+    )
+    conflicted = len(conflicting_pairs) > 0
+    conflict_detail = ", ".join(conflicting_pairs) if conflicted else None
 
     return {
         "ssl_score": ssl_score,
         "mfcc_score": mfcc_score,
+        "phase_score": phase_score,
         "final_voice_risk": final_voice_risk,
         "conflicted": conflicted,
+        "conflict_detail": conflict_detail,
+        "detected_language": detected_language,
+        "language_confidence": language_confidence,
     }
 
 
@@ -178,7 +232,8 @@ def _warm_up():
     """Loads the classifier/scaler and (for the SSL backend) the
     underlying transformer model once at import time, so the first real
     request isn't the one paying the load cost. Also warms up the MFCC v3
-    "second opinion" model used by score_dual()."""
+    and phase-spectrum "second/third opinion" models used by
+    score_all_layers()."""
     try:
         load_model()
         if ACTIVE_BACKEND == "ssl":
@@ -194,23 +249,41 @@ def _warm_up():
     try:
         load_mfcc_v3_model()
     except FileNotFoundError:
-        pass  # same -- let score_dual() raise properly on first real use
+        pass  # same -- let score_all_layers() raise properly on first real use
+
+    try:
+        load_phase_model()
+    except FileNotFoundError:
+        pass  # same -- let score_all_layers() raise properly on first real use
+
+    try:
+        load_language_model()
+    except FileNotFoundError:
+        pass  # same -- let score_all_layers() raise properly on first real use
 
 
 _warm_up()
 
 
 def analyze_file(file_path, profile=None):
-    clf, scaler = load_model()
+    """Voice-only risk assessment (no call/transaction context) via
+    score_all_layers() -- SSL + MFCC v3 + phase-spectrum combined."""
     audio = load_and_preprocess(file_path)
-    score = score_single_clip(audio, clf, scaler)
+    layers = score_all_layers(audio)
     zero_buffer(audio)  # privacy: don't let the raw waveform linger in memory
-    level, action = risk_level(score, profile)
+    level, action = risk_level(layers["final_voice_risk"], profile)
     return {
         "file": file_path,
-        "risk_score": score,
+        "risk_score": layers["final_voice_risk"],
         "risk_level": level,
         "recommended_action": action,
+        "ssl_score": layers["ssl_score"],
+        "mfcc_score": layers["mfcc_score"],
+        "phase_score": layers["phase_score"],
+        "conflicted": layers["conflicted"],
+        "conflict_detail": layers["conflict_detail"],
+        "detected_language": layers["detected_language"],
+        "language_confidence": layers["language_confidence"],
     }
 
 
@@ -220,13 +293,14 @@ def analyze_file_with_context(file_path, context=None, profile=None, speaker_id=
     risk_engine.compute_final_risk for the security-critical asymmetry:
     context/consistency can escalate, never suppress).
 
-    Voice risk itself comes from score_dual() -- SSL (primary) + MFCC v3
-    (independent second opinion) -- rather than a single model.
+    Voice risk itself comes from score_all_layers() -- SSL (primary) +
+    MFCC v3 + phase-spectrum (two independent second/third opinions) --
+    rather than a single model.
     speaker_id is optional: with no enrolled profile for that ID (or no
     speaker_id at all), consistency simply isn't part of the blend rather
     than being treated as a confirmed match or a confirmed risk."""
     audio = load_and_preprocess(file_path)
-    dual = score_dual(audio)
+    layers = score_all_layers(audio)
 
     consistency = None
     if speaker_id:
@@ -235,11 +309,15 @@ def analyze_file_with_context(file_path, context=None, profile=None, speaker_id=
     zero_buffer(audio)
 
     consistency_risk = consistency["consistency_risk"] if consistency else None
-    result = compute_final_risk(dual["final_voice_risk"], context, profile, consistency_risk,
-                                 speaker_id=speaker_id)
-    result["ssl_score"] = dual["ssl_score"]
-    result["mfcc_score"] = dual["mfcc_score"]
-    result["conflicted"] = dual["conflicted"]
+    result = compute_final_risk(layers["final_voice_risk"], context, profile, consistency_risk,
+                                 speaker_id=speaker_id, ssl_score=layers["ssl_score"])
+    result["ssl_score"] = layers["ssl_score"]
+    result["mfcc_score"] = layers["mfcc_score"]
+    result["phase_score"] = layers["phase_score"]
+    result["conflicted"] = layers["conflicted"]
+    result["conflict_detail"] = layers["conflict_detail"]
+    result["detected_language"] = layers["detected_language"]
+    result["language_confidence"] = layers["language_confidence"]
     if consistency:
         result["speaker_similarity"] = consistency["similarity"]
         result["speaker_match"] = consistency["match"]
@@ -251,6 +329,7 @@ def analyze_file_with_context(file_path, context=None, profile=None, speaker_id=
         "risk_level": result["risk_level"],
         "profile": result["profile"],
         "context_flags": _extract_context_flags(context),
+        "detected_language": result["detected_language"],
     })
     return result
 
@@ -271,10 +350,14 @@ def _extract_context_flags(context):
 
 
 def stream_chunks(file_path, chunk_seconds=2.0, overlap=0.5, alpha=0.6):
-    """Yield a per-chunk risk result dict as each chunk is scored. Shared by
-    analyze_stream() (console demo) and the Flask SSE endpoint (app.py)."""
-    clf, scaler = load_model()
-
+    """Yield a per-chunk risk result dict as each chunk is scored, using
+    all four layers (SSL + MFCC v3 + phase-spectrum) per chunk -- not
+    just SSL. Shared by analyze_stream() (console demo) and the Flask
+    SSE endpoint (app.py). NOTE: the live Twilio/Telnyx call path
+    (twilio_handler.CallSession) calls score_single_clip() directly
+    rather than going through this function, and is unchanged by this --
+    it stays SSL-only for now, since folding in three model calls per
+    live 2-second chunk risks real-time latency and wasn't asked for here."""
     y, sr = librosa.load(file_path, sr=16000, mono=True)
     y, _ = librosa.effects.trim(y, top_db=20)
     peak = np.max(np.abs(y))
@@ -285,7 +368,8 @@ def stream_chunks(file_path, chunk_seconds=2.0, overlap=0.5, alpha=0.6):
 
     rolling_score = None
     for i, chunk in enumerate(chunks):
-        instant_score = score_single_clip(chunk, clf, scaler)
+        layers = score_all_layers(chunk)
+        instant_score = layers["final_voice_risk"]
         zero_buffer(chunk)  # privacy: don't let the raw chunk linger in memory
         rolling_score = instant_score if rolling_score is None else (
             alpha * instant_score + (1 - alpha) * rolling_score
@@ -300,6 +384,11 @@ def stream_chunks(file_path, chunk_seconds=2.0, overlap=0.5, alpha=0.6):
             "rolling_score": rolling_score,
             "risk_level": level,
             "recommended_action": action,
+            "ssl_score": layers["ssl_score"],
+            "mfcc_score": layers["mfcc_score"],
+            "phase_score": layers["phase_score"],
+            "conflicted": layers["conflicted"],
+            "conflict_detail": layers["conflict_detail"],
         }
 
     zero_buffer(y)  # privacy: full-file buffer, done with it after chunking
